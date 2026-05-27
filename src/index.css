@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+/* Custom CSS variables for runtime theme mapping */
+:root {
+  /* Default light fallback if user toggles out of dark */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-color: #e2e8f0;
+  --accent-primary: #3b82f6;
+  --accent-hover: #1d4ed8;
+  --accent-light: rgba(59, 130, 246, 0.1);
+  --badge-bg: #e2e8f0;
+  --display-font: "Space Grotesk", sans-serif;
+}
+
+/* Theme presets implemented via custom attributes */
+[data-theme="dark"] {
+  --bg-primary: #020617; /* Slate 950 */
+  --bg-secondary: #0b1329; /* Slate 900 modified for deep glassmorphism */
+  --bg-tertiary: #1e293b; /* Slate 800 */
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border-color: #1e293b;
+  --accent-primary: #10b981; /* Emerald 500 */
+  --accent-hover: #059669; /* Emerald 600 */
+  --accent-light: rgba(16, 185, 129, 0.1);
+  --badge-bg: #1e293b;
+  --display-font: "Space Grotesk", sans-serif;
+}
+
+[data-theme="light"] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-color: #e2e8f0;
+  --accent-primary: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-light: rgba(37, 99, 235, 0.08);
+  --badge-bg: #f1f5f9;
+  --display-font: "Space Grotesk", sans-serif;
+}
+
+[data-theme="nord"] {
+  --bg-primary: #242933;
+  --bg-secondary: #2e3440;
+  --bg-tertiary: #3b4252;
+  --text-primary: #eceff4;
+  --text-secondary: #d8dee9;
+  --border-color: #3b4252;
+  --accent-primary: #88c0d0;
+  --accent-hover: #81a1c1;
+  --accent-light: rgba(136, 192, 208, 0.12);
+  --badge-bg: #434c5e;
+  --display-font: "Space Grotesk", sans-serif;
+}
+
+[data-theme="neo_tokyo"] {
+  --bg-primary: #05020c;
+  --bg-secondary: #0d061e;
+  --bg-tertiary: #1b0e35;
+  --text-primary: #fcfaff;
+  --text-secondary: #a491cf;
+  --border-color: #1b0e35;
+  --accent-primary: #f43f5e; /* Rose 500 */
+  --accent-hover: #e11d48; /* Rose 600 */
+  --accent-light: rgba(244, 63, 94, 0.12);
+  --badge-bg: #1b0e35;
+  --display-font: "Space Grotesk", sans-serif;
+}
+
+[data-theme="earthy_warm"] {
+  --bg-primary: #f7f4ee;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #ebe3d5;
+  --text-primary: #2e2620;
+  --text-secondary: #6b5c50;
+  --border-color: #e6dcce;
+  --accent-primary: #3f6212;
+  --accent-hover: #166534;
+  --accent-light: rgba(63, 98, 18, 0.08);
+  --badge-bg: #ebe3d5;
+  --display-font: "Space Grotesk", sans-serif;
+}
+
+/* Styled Bento Grid Card Utilities */
+.bento-card-base {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 1.75rem; /* custom super modern rounded-3xl */
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bento-card-base:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-primary);
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.1), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+}
+
+.bento-pill {
+  padding: 0.25rem 0.75rem;
+  background-color: var(--accent-light);
+  border: 1px solid rgba(var(--accent-primary), 0.2);
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Custom CSS Helpers */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Inter", var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--display-font);
+}
+
+/* Scroll and accessibility tweaks */
+html {
+  scroll-behavior: smooth;
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* High contrast recruiter resume layouts (@media print) */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+    font-family: "Inter", sans-serif !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+
+  .print-page-break {
+    page-break-inside: avoid;
+  }
+
+  /* Make sure background colors in printing look correct if enabled */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+.print-only {
+  display: none;
+}

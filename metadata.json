@@ -1,0 +1,6 @@
+{
+  "name": "Developer Portfolio and CMS",
+  "description": "A highly customizable personal portfolio for software engineers with built-in blogging, downloadable resumes with QR codes, and a comprehensive client-side Content Management System.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
