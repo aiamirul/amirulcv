@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { PortfolioData, WorkExperience, Education, Project, TechStackItem, BlogPost, SubmittedMessage } from '../types';
 import { defaultPortfolioData } from '../defaultData';
+import { ThemeSelector, ThemePresetVal } from './ThemeSelector';
 
 interface CMSDashboardProps {
   data: PortfolioData;
@@ -18,6 +19,8 @@ interface CMSDashboardProps {
   onClearMessages: () => void;
   onDeleteMessage: (id: string) => void;
   onClose: () => void;
+  currentTheme: ThemePresetVal;
+  onThemeChange: (theme: ThemePresetVal) => void;
 }
 
 type CMSTab = 'profile' | 'experience' | 'education' | 'projects' | 'skills' | 'blogs' | 'messages' | 'dataops';
@@ -28,7 +31,9 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
   messages,
   onClearMessages,
   onDeleteMessage,
-  onClose
+  onClose,
+  currentTheme,
+  onThemeChange
 }) => {
   const [activeTab, setActiveTab] = useState<CMSTab>('profile');
   const [profile, setProfile] = useState(data.profile);
@@ -1328,6 +1333,15 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
             {activeTab === 'dataops' && (
               <div className="space-y-6">
                 <div>
+                  <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2 mb-4">Aesthetic Theme Templates</h3>
+                  <p className="text-xs text-slate-500 -mt-2.5 mb-5">Select a custom design template for this portfolio dashboard. Recruiters visiting via custom parameter links will render in this visual style.</p>
+                </div>
+
+                <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-slate-900">
+                  <ThemeSelector currentTheme={currentTheme} onThemeChange={onThemeChange} />
+                </div>
+
+                <div className="pt-4 border-t border-slate-200">
                   <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2 mb-4">Profile Data Migration Tools</h3>
                   <p className="text-xs text-slate-500 -mt-2.5 mb-5">Fully control package portability. Download your custom CV and profile datasets or restore defaults.</p>
                 </div>

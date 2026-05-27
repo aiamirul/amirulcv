@@ -82,6 +82,12 @@ export default function App() {
     message: string;
   }>({ status: 'idle', message: '' });
 
+  // 8. Mode Context (Only show CMS controls when ?mode=dev)
+  const [isDevMode, setIsDevMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'dev';
+  });
+
   // Optional: check for loadjson query parameter on load
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -222,17 +228,19 @@ export default function App() {
           </span>
         </button>
 
-        <button
-          onClick={() => setIsCmsOpen(true)}
-          className="w-12 h-12 rounded-full bg-slate-950 hover:scale-105 text-white border border-slate-800 shadow-xl flex items-center justify-center transition-all cursor-pointer relative group ring-2 ring-indigo-500/20"
-          title="Manage Content (CMS Dashboard)"
-          aria-label="Open CMS Content dashboard"
-        >
-          <Settings className="w-5 h-5 animate-spin-slow" />
-          <span className="absolute -left-36 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
-            Manage Portfolio CMS
-          </span>
-        </button>
+        {isDevMode && (
+          <button
+            onClick={() => setIsCmsOpen(true)}
+            className="w-12 h-12 rounded-full bg-slate-950 hover:scale-105 text-white border border-slate-800 shadow-xl flex items-center justify-center transition-all cursor-pointer relative group ring-2 ring-indigo-500/20"
+            title="Manage Content (CMS Dashboard)"
+            aria-label="Open CMS Content dashboard"
+          >
+            <Settings className="w-5 h-5 animate-spin-slow" />
+            <span className="absolute -left-36 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
+              Manage Portfolio CMS
+            </span>
+          </button>
+        )}
       </div>
 
       {/* ──────────────────────────────────────────────────────────────────
@@ -307,11 +315,6 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {/* Dynamic theme banner preview widget (No-Print) */}
-        <div className="no-print">
-          <ThemeSelector currentTheme={theme} onThemeChange={setTheme} />
-        </div>
 
         {/* Master Bento Grid Wrapper */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
@@ -1025,13 +1028,17 @@ export default function App() {
             >
               Scroll to Top
             </button>
-            <span className="text-[var(--border-color)]">|</span>
-            <button
-              onClick={() => setIsCmsOpen(true)}
-              className="hover:underline hover:text-[var(--accent-primary)] font-semibold cursor-pointer flex items-center gap-1"
-            >
-              <Settings className="w-3 h-3" /> Dashboard Login
-            </button>
+            {isDevMode && (
+              <>
+                <span className="text-[var(--border-color)]">|</span>
+                <button
+                  onClick={() => setIsCmsOpen(true)}
+                  className="hover:underline hover:text-[var(--accent-primary)] font-semibold cursor-pointer flex items-center gap-1"
+                >
+                  <Settings className="w-3 h-3" /> Dashboard Login
+                </button>
+              </>
+            )}
           </div>
         </div>
       </footer>
@@ -1228,7 +1235,7 @@ export default function App() {
       {/* ──────────────────────────────────────────────────────────────────
           CMS DASHBOARD OVERLAY MODAL (No-Print)
           ────────────────────────────────────────────────────────────────── */}
-      {isCmsOpen && (
+      {isCmsOpen && isDevMode && (
         <CMSDashboard 
           data={portfolioData}
           onUpdateData={handleUpdateData}
@@ -1236,6 +1243,8 @@ export default function App() {
           onClearMessages={handleClearMessages}
           onDeleteMessage={handleDeleteMessage}
           onClose={() => setIsCmsOpen(false)}
+          currentTheme={theme}
+          onThemeChange={setTheme}
         />
       )}
 
