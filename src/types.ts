@@ -17,6 +17,8 @@ export interface ProfileInfo {
   aboutBrief: string;
   aboutLong: string;
   resumeSubtitle: string;
+  googleScholarUrl?: string;
+  qrOverrideContent?: string;
 }
 
 export interface Education {
@@ -84,6 +86,27 @@ export interface SubmittedMessage {
   read: boolean;
 }
 
+export interface Publication {
+  id: string;
+  title: string;
+  authors: string;
+  journal: string;
+  year: string;
+  url?: string;
+  description?: string;
+}
+
+export interface SectionVisibility {
+  callingCard?: boolean;
+  education?: boolean;
+  experience?: boolean;
+  projects?: boolean;
+  skills?: boolean;
+  blogs?: boolean;
+  publications?: boolean;
+  contact?: boolean;
+}
+
 export interface PortfolioData {
   profile: ProfileInfo;
   education: Education[];
@@ -91,4 +114,6 @@ export interface PortfolioData {
   projects: Project[];
   skills: TechStackItem[];
   blogs: BlogPost[];
+  publications?: Publication[];
+  visibility?: SectionVisibility;
 }

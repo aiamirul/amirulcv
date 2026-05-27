@@ -10,7 +10,7 @@ import {
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
   CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw
 } from 'lucide-react';
-import { PortfolioData, Project, BlogPost, SubmittedMessage } from './types';
+import { PortfolioData, Project, BlogPost, SubmittedMessage, Publication } from './types';
 import { defaultPortfolioData } from './defaultData';
 import { ThemeSelector, ThemePresetVal, THEME_OPTIONS } from './components/ThemeSelector';
 import { CMSDashboard } from './components/CMSDashboard';
@@ -31,6 +31,17 @@ export default function App() {
     }
     return defaultPortfolioData;
   });
+
+  const vis = {
+    callingCard: portfolioData.visibility?.callingCard ?? true,
+    education: portfolioData.visibility?.education ?? true,
+    experience: portfolioData.visibility?.experience ?? true,
+    projects: portfolioData.visibility?.projects ?? true,
+    skills: portfolioData.visibility?.skills ?? true,
+    blogs: portfolioData.visibility?.blogs ?? true,
+    publications: portfolioData.visibility?.publications ?? true,
+    contact: portfolioData.visibility?.contact ?? true,
+  };
 
   // 2. Theme Management State
   const [theme, setTheme] = useState<ThemePresetVal>(() => {
@@ -62,8 +73,12 @@ export default function App() {
   // 4. Interface state togglers
   const [isCmsOpen, setIsCmsOpen] = useState(false);
   const [isResumeOpen, setIsResumeOpen] = useState(false);
+  const [cvPrintMode, setCvPrintMode] = useState<'fancy' | 'plain'>('fancy');
+  const [cvShowProfilePic, setCvShowProfilePic] = useState<boolean>(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
+  const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
+  const [cardViewMode, setCardViewMode] = useState<'flip' | 'all-in-one'>('flip');
 
   // 5. Contact Form Fields
   const [contactName, setContactName] = useState('');
@@ -251,18 +266,28 @@ export default function App() {
           <a href="#" className="flex items-center gap-2">
             <span className="font-display font-extrabold uppercase text-lg sm:text-xl tracking-wider text-[var(--text-primary)]">
               {portfolioData.profile.name.split(' ')[0]}
-              <span className="text-[var(--accent-primary)]">.dev</span>
+              <span className="text-[var(--accent-primary)]">.cloud</span>
             </span>
           </a>
 
           {/* Nav scroll anchor markers */}
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#about" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer">Biography</a>
-            <a href="#experience" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Timeline</a>
-            <a href="#projects" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Projects</a>
-            <a href="#skills" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Competencies</a>
-            <a href="#blog" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Articles</a>
-            <a href="#contact" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Contact</a>
+            <a href="#about" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Biography</a>
+            {vis.experience && (
+              <a href="#experience" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Timeline</a>
+            )}
+            {vis.projects && (
+              <a href="#projects" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Projects</a>
+            )}
+            {vis.skills && (
+              <a href="#skills" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Competencies</a>
+            )}
+            {vis.blogs && (
+              <a href="#blog" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Articles</a>
+            )}
+            {vis.contact && (
+              <a href="#contact" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text(--text-primary) tracking-wider cursor-pointer font-sans">Contact</a>
+            )}
           </nav>
 
           <div className="flex items-center gap-3">
@@ -319,8 +344,8 @@ export default function App() {
         {/* Master Bento Grid Wrapper */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
           
-          {/* CARD 1: Profile biography & Main Bio Display (col-span-8) */}
-          <section id="about" className="bento-card-base lg:col-span-8 flex flex-col justify-between min-h-[440px] relative overflow-hidden group">
+          {/* CARD 1: Profile biography & Main Bio Display */}
+          <section id="about" className={`bento-card-base ${vis.callingCard ? 'lg:col-span-8' : 'lg:col-span-12'} flex flex-col justify-between min-h-[440px] relative overflow-hidden group`}>
             {/* Corner visual blur blob matching current accent */}
             <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-[var(--accent-primary)]/10 blur-3xl rounded-full pointer-events-none group-hover:bg-[var(--accent-primary)]/15 transition-all duration-500"></div>
             
@@ -364,9 +389,20 @@ export default function App() {
                   {portfolioData.profile.phone && (
                     <>
                       <span className="hidden sm:inline text-[var(--border-color)]">|</span>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1.5">
                         <Phone className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                        {portfolioData.profile.phone}
+                        <span>{portfolioData.profile.phone}</span>
+                        <a
+                          href={`https://wa.me/${portfolioData.profile.phone.replace(/\D/g, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title="Chat on WhatsApp"
+                          className="inline-flex items-center justify-center p-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full transition-colors leading-none"
+                        >
+                          <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.458h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                          </svg>
+                        </a>
                       </span>
                     </>
                   )}
@@ -391,78 +427,328 @@ export default function App() {
                 <Printer className="w-3.5 h-3.5" /> Printable CV / PDF
               </button>
               
-              <a
-                href={portfolioData.profile.githubUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2.5 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl text-xs font-bold uppercase text-[var(--text-primary)] flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Github className="w-4 h-4" /> GitHub
-              </a>
+              {portfolioData.profile.githubUrl && (
+                <a
+                  href={portfolioData.profile.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl text-xs font-bold uppercase text-[var(--text-primary)] flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Github className="w-4 h-4" /> GitHub
+                </a>
+              )}
               
-              <a
-                href={portfolioData.profile.linkedInUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2.5 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl text-xs font-bold uppercase text-[var(--text-primary)] flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Linkedin className="w-4 h-4" /> LinkedIn
-              </a>
+              {portfolioData.profile.linkedInUrl && (
+                <a
+                  href={portfolioData.profile.linkedInUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl text-xs font-bold uppercase text-[var(--text-primary)] flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Linkedin className="w-4 h-4" /> LinkedIn
+                </a>
+              )}
+
+              {portfolioData.profile.googleScholarUrl && (
+                <a
+                  href={portfolioData.profile.googleScholarUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl text-xs font-bold uppercase text-[var(--text-primary)] flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Globe className="w-4 h-4" /> Google Scholar
+                </a>
+              )}
             </div>
           </section>
 
-          {/* CARD 2: Interactive Resume QR Panel & Academics (col-span-4) */}
-          <section className="bento-card-base lg:col-span-4 flex flex-col justify-between group">
-            <div className="space-y-2">
-              <span className="bento-pill max-w-max">Credential Redirect</span>
-              <h3 className="text-lg font-bold font-display tracking-tight text-[var(--text-primary)]">Digital Resume QR</h3>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                Scan this interactive live code node containing all coordinate references back to this portfolio state.
+          {vis.callingCard && (
+            <section className="bento-card-base lg:col-span-4 flex flex-col justify-between group relative overflow-hidden">
+            <div className="space-y-1.5 z-10">
+              <div className="flex justify-between items-center gap-1.5 flex-wrap">
+                <span className="bento-pill">Calling Card Preview</span>
+                
+                {/* Mode Selector Option tabs */}
+                <div className="flex bg-[var(--bg-primary)] border border-[var(--border-color)] p-0.5 rounded-lg select-none">
+                  <button
+                    onClick={() => setCardViewMode('flip')}
+                    className={`px-1.5 py-0.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-wide rounded ${
+                      cardViewMode === 'flip' 
+                        ? 'bg-[var(--accent-primary)] text-white shadow-sm' 
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    } transition-all duration-200 cursor-pointer`}
+                    title="3D Flip Mode"
+                  >
+                    3D Flip
+                  </button>
+                  <button
+                    onClick={() => setCardViewMode('all-in-one')}
+                    className={`px-1.5 py-0.5 text-[8px] sm:text-[9px] font-bold uppercase tracking-wide rounded ${
+                      cardViewMode === 'all-in-one' 
+                        ? 'bg-[var(--accent-primary)] text-white shadow-sm' 
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    } transition-all duration-200 cursor-pointer`}
+                    title="All-In-One Flat Mode"
+                  >
+                    All-in-One
+                  </button>
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-baseline">
+                <h3 className="text-base font-bold font-display tracking-tight text-[var(--text-primary)]">Interactive Business Pass</h3>
+                {cardViewMode === 'flip' && (
+                  <button 
+                    onClick={() => setCardSide(prev => prev === 'front' ? 'back' : 'front')}
+                    className="text-[8px] font-extrabold uppercase tracking-wider text-[var(--accent-primary)] hover:underline cursor-pointer"
+                  >
+                    Flip Over ⟲
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                A modern digital coordinate code card. Overridable QR and active coordinates connect scanning parties straight to secure ports.
               </p>
             </div>
 
-            {/* Responsive visual QR vector container */}
-            <div className="my-4 flex items-center justify-center py-4 px-6 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-2xl relative overflow-hidden select-none">
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(currentUrl)}`} 
-                alt="Interactive Credentials Live QR" 
-                className="w-24 h-24 object-contain rounded-md filter invert-0 dark:brightness-100"
-                referrerPolicy="no-referrer"
-              />
-            </div>
+            {/* Calling Card rendering block based on mode selection */}
+            {cardViewMode === 'flip' ? (
+              /* Interactive Physical 3D Flip Card mockup container */
+              <div 
+                className="my-5 relative w-full h-56 select-none perspective-1000 cursor-pointer"
+                onClick={() => setCardSide(prev => prev === 'front' ? 'back' : 'front')}
+              >
+                <div className={`relative w-full h-full duration-500 transform-style-3d transition-transform ${cardSide === 'back' ? 'rotate-y-180' : ''}`}>
+                  
+                  {/* FRONT SIDE (Design focusing on identity and academic/education) */}
+                  <div className="absolute inset-0 w-full h-full backface-hidden rounded-2xl bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)] border border-[var(--border-color)] p-4 flex flex-col justify-between overflow-hidden shadow-md group-hover:border-[var(--accent-primary)]/60 transition-colors">
+                    {/* Digital circuit vector backing lines */}
+                    <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-[var(--accent-primary)]/10 blur-xl rounded-full pointer-events-none"></div>
+                    
+                    <div className="flex gap-3.5 items-start">
+                      {/* Picture (Avatar) */}
+                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[var(--accent-primary)] bg-[var(--bg-primary)] shadow-sm shrink-0">
+                        <img 
+                          src={portfolioData.profile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256'} 
+                          alt="Profile avatar" 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                      {/* Identification labels */}
+                      <div className="space-y-0.5 overflow-hidden">
+                        <h4 className="font-display font-black text-sm text-[var(--text-primary)] tracking-wide uppercase truncate">
+                          {portfolioData.profile.name}
+                        </h4>
+                        <p className="text-[10px] font-bold text-[var(--accent-primary)] uppercase tracking-wider truncate">
+                          {portfolioData.profile.title}
+                        </p>
+                        <p className="text-[9px] text-[var(--text-secondary)] font-semibold truncate">
+                          {portfolioData.profile.currentRole}
+                        </p>
+                      </div>
+                    </div>
 
-            {/* Education Summary Log nested elegantly inside */}
-            <div className="border-t border-[var(--border-color)]/75 pt-3 mb-2">
-              <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-2">Education Log</span>
-              {portfolioData.education.length > 0 ? (
-                <div className="text-xs space-y-2">
-                  <div className="flex justify-between font-semibold items-baseline">
-                    <span className="text-[var(--text-primary)] font-display truncate pr-1">
-                      {portfolioData.education[0].degree}
-                    </span>
-                    <span className="text-[10px] text-[var(--text-secondary)] whitespace-nowrap">
-                      {portfolioData.education[0].endDate}
+                    {/* Picture Education logs */}
+                    <div className="border-t border-[var(--border-color)]/50 pt-3 relative z-10 space-y-1">
+                      <p className="font-bold text-xs text-[var(--text-primary)] font-display">
+                        Master in Computer Science
+                      </p>
+                      <p className="text-[10px] text-[var(--accent-primary)] font-bold uppercase tracking-wider">
+                        {portfolioData.profile.title}
+                      </p>
+                    </div>
+
+                    {/* Pass footer labels */}
+                    <div className="flex justify-between items-center text-[9px] font-mono text-[var(--text-secondary)] opacity-50 pt-1">
+                      <span>AMIRUL.CLOUD PASS</span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        FRONT SIDE
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* BACK SIDE (Design focusing on contact coordinates and QR) */}
+                  <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl bg-gradient-to-br from-[var(--bg-tertiary)] to-[var(--bg-secondary)] border border-[var(--border-color)] p-4 flex flex-col justify-between overflow-hidden shadow-md group-hover:border-[var(--accent-primary)]/60 transition-colors">
+                    <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-[var(--accent-primary)]/10 blur-xl rounded-full pointer-events-none"></div>
+
+                    <div className="flex gap-3 items-center h-full">
+                      {/* Contact Email & Phone */}
+                      <div className="flex-1 space-y-2.5 overflow-hidden">
+                        <span className="block text-[8px] font-black uppercase tracking-widest text-[var(--text-secondary)] font-mono">
+                          CONTACT
+                        </span>
+                        <div className="space-y-1.5 text-[10px] text-[var(--text-primary)] font-semibold">
+                          {/* Email */}
+                          <div className="flex items-center gap-1.5 truncate">
+                            <Mail className="w-3.5 h-3.5 text-[var(--accent-primary)] shrink-0" />
+                            <span className="truncate">{portfolioData.profile.email}</span>
+                          </div>
+                          {/* Phone */}
+                          {portfolioData.profile.phone && (
+                            <div className="flex items-center gap-1.5 truncate">
+                              <Phone className="w-3.5 h-3.5 text-[var(--accent-primary)] shrink-0" />
+                              <span className="truncate">{portfolioData.profile.phone}</span>
+                            </div>
+                          )}
+                          {/* Location */}
+                          <div className="flex items-center gap-1.5 truncate text-[9px] text-[var(--text-secondary)]">
+                            <MapPin className="w-3.5 h-3.5 text-[var(--accent-primary)] shrink-0" />
+                            <span className="truncate">{portfolioData.profile.location}</span>
+                          </div>
+                        </div>
+
+                        {/* Overridable Link description badge */}
+                        <span className="inline-block bg-[var(--accent-light)] text-[var(--accent-primary)] font-mono font-extrabold uppercase tracking-wider text-[8px] px-2 py-0.5 rounded">
+                          {portfolioData.profile.qrOverrideContent ? "Custom Override" : "Website link"}
+                        </span>
+                      </div>
+
+                      {/* QR Code */}
+                      <div className="w-24 h-24 bg-white p-1.5 rounded-xl border border-[var(--border-color)]/60 flex items-center justify-center shrink-0 relative shadow-sm group-hover:border-[var(--accent-primary)]/40 transition-colors">
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(portfolioData.profile.qrOverrideContent || portfolioData.profile.websiteUrl || currentUrl)}`} 
+                          alt="Calling Card secure QR link" 
+                          className="w-full h-full object-contain filter invert-0"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pass Back footer */}
+                    <div className="flex justify-between items-center text-[9px] font-mono text-[var(--text-secondary)] opacity-50 pt-2 border-t border-[var(--border-color)]/40">
+                      <span>ENCODED COORDINATES</span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full"></span>
+                        BACK SIDE
+                      </span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            ) : (
+              /* All-in-One Flat single page list rendering (Both sides rendered simultaneously online) */
+              <div className="my-5 flex flex-col gap-4">
+                
+                {/* FRONT RENDER VIEW */}
+                <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)] border border-[var(--border-color)] p-3.5 flex flex-col justify-between overflow-hidden shadow-sm hover:border-[var(--accent-primary)]/40 transition-colors">
+                  <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-[var(--accent-primary)]/10 blur-xl rounded-full pointer-events-none"></div>
+                  
+                  <div className="flex gap-3.5 items-start">
+                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[var(--accent-primary)] bg-[var(--bg-primary)] shadow-sm shrink-0 font-sans">
+                      <img 
+                        src={portfolioData.profile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256'} 
+                        alt="Profile avatar" 
+                        className="w-full h-full object-cover"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className="space-y-0.5 overflow-hidden">
+                      <h4 className="font-display font-black text-xs sm:text-sm text-[var(--text-primary)] tracking-wide uppercase truncate">
+                        {portfolioData.profile.name}
+                      </h4>
+                      <p className="text-[9px] font-bold text-[var(--accent-primary)] uppercase tracking-wider truncate">
+                        {portfolioData.profile.title}
+                      </p>
+                      <p className="text-[8px] text-[var(--text-secondary)] font-semibold truncate">
+                        {portfolioData.profile.currentRole}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Picture Academic logs */}
+                  <div className="border-t border-[var(--border-color)]/50 pt-2.5 space-y-1">
+                    <p className="font-bold text-xs text-[var(--text-primary)] font-display">
+                      Master in Computer Science
+                    </p>
+                    <p className="text-[9px] text-[var(--accent-primary)] font-bold uppercase tracking-wider">
+                      {portfolioData.profile.title}
+                    </p>
+                  </div>
+
+                  {/* Pass footer labels */}
+                  <div className="flex justify-between items-center text-[8px] font-mono text-[var(--text-secondary)] opacity-50 pt-1">
+                    <span>AMIRUL.CLOUD PASS</span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                      FRONT SIDE
                     </span>
                   </div>
-                  <p className="text-[11px] text-[var(--text-secondary)] -mt-1 leading-snug">
-                    {portfolioData.education[0].institution} • {portfolioData.education[0].fieldOfStudy}
-                  </p>
                 </div>
-              ) : (
-                <p className="text-[11px] text-[var(--text-secondary)] italic">Academic record set via CMS Panel.</p>
-              )}
-            </div>
+
+                {/* BACK RENDER VIEW */}
+                <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-[var(--bg-tertiary)] to-[var(--bg-secondary)] border border-[var(--border-color)] p-3.5 flex flex-col justify-between overflow-hidden shadow-sm hover:border-[var(--accent-primary)]/40 transition-colors">
+                  <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-[var(--accent-primary)]/10 blur-xl rounded-full pointer-events-none"></div>
+
+                  <div className="flex gap-2.5 items-center h-full">
+                    {/* Contact Email & Phone */}
+                    <div className="flex-1 space-y-1.5 overflow-hidden">
+                      <span className="block text-[8px] font-black uppercase tracking-widest text-[var(--text-secondary)] font-mono pb-0.5">
+                        CONTACT
+                      </span>
+                      <div className="space-y-1 text-[9px] font-semibold text-[var(--text-primary)]">
+                        {/* Email */}
+                        <div className="flex items-center gap-1 truncate">
+                          <Mail className="w-3 h-3 text-[var(--accent-primary)] shrink-0" />
+                          <span className="truncate">{portfolioData.profile.email}</span>
+                        </div>
+                        {/* Phone */}
+                        {portfolioData.profile.phone && (
+                          <div className="flex items-center gap-1 truncate">
+                            <Phone className="w-3 h-3 text-[var(--accent-primary)] shrink-0" />
+                            <span className="truncate">{portfolioData.profile.phone}</span>
+                          </div>
+                        )}
+                        {/* Location */}
+                        <div className="flex items-center gap-1 truncate text-[8px] text-[var(--text-secondary)]">
+                          <MapPin className="w-3 h-3 text-[var(--accent-primary)] shrink-0" />
+                          <span className="truncate">{portfolioData.profile.location}</span>
+                        </div>
+                      </div>
+
+                      {/* Overridable Link description badge */}
+                      <span className="inline-block bg-[var(--accent-light)] text-[var(--accent-primary)] font-mono font-extrabold uppercase tracking-wider text-[7px] px-1.5 py-0.5 rounded mt-3">
+                        {portfolioData.profile.qrOverrideContent ? "Custom Override" : "Website link"}
+                      </span>
+                    </div>
+
+                    {/* QR Code */}
+                    <div className="w-20 h-20 bg-white p-1 rounded-xl border border-[var(--border-color)]/60 flex items-center justify-center shrink-0 relative shadow-sm">
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=85x85&data=${encodeURIComponent(portfolioData.profile.qrOverrideContent || portfolioData.profile.websiteUrl || currentUrl)}`} 
+                        alt="Calling Card secure QR link" 
+                        className="w-full h-full object-contain filter invert-0"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pass Back footer */}
+                  <div className="flex justify-between items-center text-[8px] font-mono text-[var(--text-secondary)] opacity-50 pt-1.5 border-t border-[var(--border-color)]/40">
+                    <span>ENCODED COORDINATES</span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full"></span>
+                      BACK SIDE
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            )}
 
             <button
               onClick={() => setIsResumeOpen(true)}
-              className="w-full text-center py-2.5 bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+              className="w-full text-center py-2.5 bg-[var(--bg-tertiary)] hover:bg-[var(--border-color)] text-[var(--text-primary)] border border-[var(--border-color)] text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer z-10"
             >
               Print Clean CV PDF
             </button>
           </section>
+          )}
 
-          {/* CARD 3: Professional Employment chronicles (col-span-8) */}
-          <section id="experience" className="bento-card-base lg:col-span-8 flex flex-col justify-between group min-h-[460px] relative overflow-hidden">
+          {vis.experience && (
+            <section id="experience" className={`bento-card-base ${vis.skills ? 'lg:col-span-8' : 'lg:col-span-12'} flex flex-col justify-between group min-h-[460px] relative overflow-hidden`}>
             <div className="absolute -left-12 -top-12 w-64 h-64 bg-[var(--accent-primary)]/5 blur-3xl rounded-full pointer-events-none"></div>
             
             <div className="z-10 space-y-4">
@@ -514,9 +800,10 @@ export default function App() {
               Check Achievements & Metrics →
             </a>
           </section>
+          )}
 
-          {/* CARD 4: Modern Technical Competencies Categorizations (col-span-4) */}
-          <section id="skills" className="bento-card-base lg:col-span-4 flex flex-col justify-between group">
+          {vis.skills && (
+            <section id="skills" className={`bento-card-base ${vis.experience ? 'lg:col-span-4' : 'lg:col-span-12'} flex flex-col justify-between group`}>
             <div>
               <div className="flex items-center gap-1.5 mb-2">
                 <Layers className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
@@ -563,9 +850,10 @@ export default function App() {
               Analyze Metrics Matrix →
             </a>
           </section>
+          )}
 
-          {/* CARD 5: Portfolio Projects / Custom Case Studies (col-span-12) */}
-          <section id="projects" className="lg:col-span-12 flex flex-col gap-4 scroll-mt-6">
+          {vis.projects && (
+            <section id="projects" className="lg:col-span-12 flex flex-col gap-4 scroll-mt-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 px-1">
               <div>
                 <div className="flex items-center gap-1.5 mb-1 bg-transparent">
@@ -656,9 +944,10 @@ export default function App() {
               </div>
             )}
           </section>
+          )}
 
-          {/* CARD 6: Technical Blog Feed Insights (col-span-6) */}
-          <section id="blog" className="bento-card-base lg:col-span-6 flex flex-col justify-between group scroll-mt-6">
+          {vis.blogs && (
+            <section id="blog" className={`bento-card-base ${vis.contact ? 'lg:col-span-6' : 'lg:col-span-12'} flex flex-col justify-between group scroll-mt-6`}>
             <div>
               <div className="flex items-center justify-between border-b border-[var(--border-color)] pb-3 mb-4">
                 <div className="flex items-center gap-1.5">
@@ -715,9 +1004,10 @@ export default function App() {
               Check Comprehensive Research Articles →
             </button>
           </section>
+          )}
 
-          {/* CARD 7: Local Message Inbox Form with Pulsing Status (col-span-6) */}
-          <section id="contact" className="bento-card-base lg:col-span-6 flex flex-col justify-between group scroll-mt-6">
+          {vis.contact && (
+            <section id="contact" className={`bento-card-base ${vis.blogs ? 'lg:col-span-6' : 'lg:col-span-12'} flex flex-col justify-between group scroll-mt-6`}>
             <div>
               <div className="flex items-center justify-between mb-3.5">
                 <span className="bento-pill">Communications Hub</span>
@@ -800,6 +1090,7 @@ export default function App() {
               </form>
             </div>
           </section>
+          )}
 
         </div>
 
@@ -811,7 +1102,8 @@ export default function App() {
         <div id="detailed-drilldowns" className="pt-16 border-t border-[var(--border-color)]/70 space-y-16">
           
           {/* Detailed Chronicles Section */}
-          <section id="detailed-chronicles" className="space-y-8 scroll-mt-24">
+          {vis.experience && (
+            <section id="detailed-chronicles" className="space-y-8 scroll-mt-24">
             <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
               <Briefcase className="w-5 h-5 text-[var(--accent-primary)]" />
               <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
@@ -856,9 +1148,11 @@ export default function App() {
               </div>
             )}
           </section>
+          )}
 
           {/* Academic Logs Section */}
-          <section id="detailed-academics" className="space-y-8 scroll-mt-24">
+          {vis.education && (
+            <section id="detailed-academics" className="space-y-8 scroll-mt-24">
             <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
               <GraduationCap className="w-5 h-5 text-[var(--accent-primary)]" />
               <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
@@ -896,9 +1190,11 @@ export default function App() {
               </div>
             )}
           </section>
+          )}
 
           {/* Detailed Skill Matrix Categories */}
-          <section id="detailed-competencies" className="space-y-8 scroll-mt-24">
+          {vis.skills && (
+            <section id="detailed-competencies" className="space-y-8 scroll-mt-24">
             <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
               <Layers className="w-5 h-5 text-[var(--accent-primary)]" />
               <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
@@ -947,9 +1243,61 @@ export default function App() {
               })}
             </div>
           </section>
+          )}
+
+          {/* Publications Section */}
+          {vis.publications && portfolioData.publications && portfolioData.publications.length > 0 && (
+            <section id="detailed-publications" className="space-y-8 scroll-mt-24">
+              <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
+                <Globe className="w-5 h-5 text-[var(--accent-primary)]" />
+                <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
+                  Publications & Research Work
+                </h2>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {portfolioData.publications.map((pub) => (
+                  <div key={pub.id} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-2xl flex flex-col justify-between hover:border-[var(--accent-primary)]/45 shadow-sm transition-all duration-300">
+                    <div>
+                      <div className="flex justify-between items-start gap-4 mb-2">
+                        <span className="text-[10px] font-mono font-bold uppercase text-[var(--accent-primary)] bg-[var(--accent-light)] px-2 py-0.5 rounded">
+                          {pub.year}
+                        </span>
+                        {pub.url && (
+                          <a
+                            href={pub.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[var(--accent-primary)] hover:underline inline-flex items-center gap-1 font-semibold"
+                          >
+                            Read Paper <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                      <h4 className="font-bold text-sm text-[var(--text-primary)] leading-tight mb-1.5 font-display">
+                        {pub.title}
+                      </h4>
+                      <p className="text-xs text-[var(--text-primary)] font-medium mb-1">
+                        Authors: <span className="font-semibold text-[var(--text-secondary)]">{pub.authors}</span>
+                      </p>
+                      <p className="text-xs text-[var(--text-secondary)] mb-3 font-medium">
+                        Venue: <span className="italic">{pub.journal}</span>
+                      </p>
+                      {pub.description && (
+                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed border-t border-[var(--border-color)]/60 pt-2.5 mt-2">
+                          {pub.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Full Blogs Archive list */}
-          <section id="detailed-journal" className="space-y-8 sm:space-y-10 scroll-mt-24">
+          {vis.blogs && (
+            <section id="detailed-journal" className="space-y-8 sm:space-y-10 scroll-mt-24">
             <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
               <BookOpen className="w-5 h-5 text-[var(--accent-primary)]" />
               <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
@@ -1005,6 +1353,7 @@ export default function App() {
               </div>
             )}
           </section>
+          )}
 
         </div>
 
@@ -1255,6 +1604,10 @@ export default function App() {
         <ResumePDF 
           data={portfolioData}
           onClose={() => setIsResumeOpen(false)}
+          printMode={cvPrintMode}
+          onChangePrintMode={setCvPrintMode}
+          showProfilePic={cvShowProfilePic}
+          onChangeShowProfilePic={setCvShowProfilePic}
         />
       )}
 
@@ -1263,89 +1616,233 @@ export default function App() {
           * Automatically activates when window.print() is fired.
           ────────────────────────────────────────────────────────────────── */}
       <div className="print-only">
-        <div className="text-black bg-white p-12 space-y-6 text-xs leading-normal">
-          <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4">
-            <div>
-              <h1 className="text-3xl font-bold uppercase font-display text-slate-900">{portfolioData.profile.name}</h1>
-              <h2 className="text-md text-slate-600 font-medium">{portfolioData.profile.resumeSubtitle || portfolioData.profile.title}</h2>
-              <div className="grid grid-cols-2 gap-2 mt-4 text-[11px] text-slate-500">
-                <span>Location: {portfolioData.profile.location}</span>
-                <span>Email: {portfolioData.profile.email}</span>
-                <span>Phone: {portfolioData.profile.phone}</span>
-                <span>Website: {portfolioData.profile.websiteUrl || currentUrl}</span>
+        {cvPrintMode === 'plain' ? (
+          <div className="text-black bg-white p-12 space-y-6 text-xs leading-normal font-sans">
+            {/* Plain Mode Header / Basic Info */}
+            <div className="border-b border-slate-300 pb-5">
+              <div className="flex items-center gap-5">
+                {cvShowProfilePic && portfolioData.profile.avatarUrl && (
+                  <img 
+                    src={portfolioData.profile.avatarUrl} 
+                    alt={portfolioData.profile.name} 
+                    className="w-20 h-20 rounded-full object-cover border border-slate-300 shrink-0 shadow-sm"
+                    referrerPolicy="no-referrer"
+                  />
+                )}
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-slate-900">{portfolioData.profile.name}</h1>
+                  <p className="text-sm text-slate-650 font-medium">{portfolioData.profile.resumeSubtitle || portfolioData.profile.title}</p>
+                </div>
               </div>
-            </div>
-            {/* Printable QR backlink */}
-            <div className="flex items-center gap-3 bg-white p-2 border border-slate-200 shrink-0">
-              <div className="text-right text-[10px] max-w-[100px] leading-tight text-slate-500">
-                Scan to explore live demo, blogs, and switch themes.
+
+              <div className="mt-5">
+                <h2 className="text-xs uppercase font-extrabold tracking-widest text-slate-800 border-b border-slate-200 pb-1 mb-2">Basic Info</h2>
+                <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[11px] text-slate-700 list-none p-0">
+                  {portfolioData.profile.location && <li><strong>Location:</strong> {portfolioData.profile.location}</li>}
+                  {portfolioData.profile.email && <li><strong>Email:</strong> {portfolioData.profile.email}</li>}
+                  {portfolioData.profile.phone && <li><strong>Phone:</strong> {portfolioData.profile.phone}</li>}
+                  {portfolioData.profile.websiteUrl && <li><strong>Website:</strong> {portfolioData.profile.websiteUrl}</li>}
+                  {portfolioData.profile.githubUrl && <li><strong>GitHub:</strong> {portfolioData.profile.githubUrl}</li>}
+                  {portfolioData.profile.linkedInUrl && <li><strong>LinkedIn:</strong> {portfolioData.profile.linkedInUrl}</li>}
+                </ul>
               </div>
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(currentUrl)}`} 
-                alt="Resume QR redirection" 
-                className="w-14 h-14"
-                referrerPolicy="no-referrer"
-              />
+
+              {portfolioData.profile.aboutLong && (
+                <div className="mt-4 text-xs text-slate-700 bg-slate-55 p-3 rounded border border-slate-150">
+                  <strong>Professional Summary:</strong> {portfolioData.profile.aboutLong}
+                </div>
+              )}
             </div>
+
+            {/* Section: Work Experience */}
+            <section className="print-page-break">
+              <h2 className="text-xs uppercase font-extrabold tracking-widest text-slate-850 border-b border-slate-300 pb-1.5 mb-3">Work Experience</h2>
+              <ul className="space-y-4 list-none p-0">
+                {portfolioData.experience.map((exp) => (
+                  <li key={exp.id} className="text-xs text-slate-700">
+                    <div className="flex justify-between font-bold text-slate-900 text-xs text-left">
+                      <span>{exp.role} — {exp.company}</span>
+                      <span className="font-mono">{exp.startDate} – {exp.endDate}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 italic mt-0.5 mb-1">{exp.location}</div>
+                    <p className="leading-normal text-[11px]">{exp.description}</p>
+                    {exp.achievements && exp.achievements.length > 0 && (
+                      <ul className="list-disc pl-5 mt-1 space-y-0.5 text-[10px] text-slate-600">
+                        {exp.achievements.map((ach, idx) => (
+                          <li key={idx}>{ach}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* Section: Education */}
+            <section className="print-page-break">
+              <h2 className="text-xs uppercase font-extrabold tracking-widest text-slate-850 border-b border-slate-300 pb-1.5 mb-3">Education</h2>
+              <ul className="space-y-3 list-none p-0">
+                {portfolioData.education.map((edu) => (
+                  <li key={edu.id} className="text-xs text-slate-700">
+                    <div className="flex justify-between font-bold text-slate-900">
+                      <span>{edu.degree} in {edu.fieldOfStudy}</span>
+                      <span className="font-mono">{edu.startDate} – {edu.endDate}</span>
+                    </div>
+                    <div className="text-xs text-slate-600 font-medium mt-0.5">{edu.institution}</div>
+                    {edu.description && <p className="text-[11px] text-slate-500 italic mt-0.5">{edu.description}</p>}
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {/* Section: Skills */}
+            <section className="print-page-break">
+              <h2 className="text-xs uppercase font-extrabold tracking-widest text-slate-850 border-b border-slate-300 pb-1.5 mb-3">Skills</h2>
+              <ul className="grid grid-cols-2 gap-4 list-none p-0">
+                {['frontend', 'backend', 'devops', 'tools'].map((cat) => {
+                  const catSkills = portfolioData.skills.filter((sk) => sk.category === cat);
+                  if (catSkills.length === 0) return null;
+                  
+                  const labelMap: Record<string, string> = {
+                    frontend: 'Frontend Technologies',
+                    backend: 'Backend & Databases',
+                    devops: 'Infrastructure & Systems',
+                    tools: 'Utilities & General'
+                  };
+
+                  return (
+                    <li key={cat} className="text-xs">
+                      <strong className="text-slate-850 block mb-0.5 text-[10px] uppercase tracking-wider">{labelMap[cat] || cat}:</strong>
+                      <span className="text-slate-650 font-semibold">
+                        {catSkills.map(s => s.name).join(', ')}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            {/* Publications if present */}
+            {portfolioData.publications && portfolioData.publications.length > 0 && (
+              <section className="print-page-break">
+                <h2 className="text-xs uppercase font-extrabold tracking-widest text-slate-855 border-b border-slate-300 pb-1.5 mb-3">Publications</h2>
+                <ul className="space-y-3 list-none p-0">
+                  {portfolioData.publications.map((pub) => (
+                    <li key={pub.id} className="text-xs text-slate-700">
+                      <div className="flex justify-between font-bold text-slate-900 text-xs">
+                        <span>{pub.title}</span>
+                        <span className="font-mono">{pub.year}</span>
+                      </div>
+                      <div className="text-[10px] text-slate-600 mt-0.5">{pub.authors} &bull; <span className="italic">{pub.journal}</span></div>
+                      {pub.description && <p className="text-[11px] text-slate-500 mt-1 leading-normal">{pub.description}</p>}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
+
+            <footer className="text-[9px] text-slate-400 font-mono border-t border-slate-200 pt-3 flex justify-between items-center mt-6">
+              <span>Plain layout compiled on {new Date().toLocaleDateString()}</span>
+              <span>{portfolioData.profile.email}</span>
+            </footer>
           </div>
-
-          <section>
-            <h3 className="text-xs uppercase font-bold tracking-widest text-slate-900 border-b border-slate-300 pb-1 mb-2">My Profile</h3>
-            <p className="text-slate-700 leading-relaxed text-[11px]">{portfolioData.profile.aboutLong}</p>
-          </section>
-
-          <section>
-            <h3 className="text-xs uppercase font-bold tracking-widest text-slate-900 border-b border-slate-300 pb-1 mb-2">Tech Stacks</h3>
-            <div className="grid grid-cols-4 gap-4 text-[11px]">
-              {['frontend', 'backend', 'devops', 'tools'].map((cat) => {
-                const s = portfolioData.skills.filter(sk => sk.category === cat);
-                if (s.length === 0) return null;
-                return (
-                  <div key={cat}>
-                    <h4 className="font-bold text-slate-800 uppercase text-[10px] mb-1">{cat}</h4>
-                    <span className="text-slate-600 font-medium">{s.map(i => i.name).join(', ')}</span>
+        ) : (
+          <div className="text-black bg-white p-12 space-y-6 text-xs leading-normal">
+            <div className="flex justify-between items-end border-b-2 border-slate-800 pb-4">
+              <div>
+                <div className="flex items-center gap-4">
+                  {cvShowProfilePic && portfolioData.profile.avatarUrl && (
+                    <img 
+                      src={portfolioData.profile.avatarUrl} 
+                      alt={portfolioData.profile.name} 
+                      className="w-16 h-16 rounded-xl object-cover border border-slate-200 shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  <div>
+                    <h1 className="text-3xl font-bold uppercase font-display text-slate-900">{portfolioData.profile.name}</h1>
+                    <h2 className="text-md text-slate-600 font-medium">{portfolioData.profile.resumeSubtitle || portfolioData.profile.title}</h2>
                   </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-xs uppercase font-bold tracking-widest text-slate-900 border-b border-slate-300 pb-1 mb-2">Work History</h3>
-            <div className="space-y-4">
-              {portfolioData.experience.map((exp) => (
-                <div key={exp.id}>
-                  <div className="flex justify-between font-bold text-slate-900 text-xs">
-                    <span>{exp.role} @ {exp.company}</span>
-                    <span>{exp.startDate} - {exp.endDate}</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 italic mb-1">{exp.location}</p>
-                  <p className="text-[11px] text-slate-700 leading-relaxed">{exp.description}</p>
-                  <ul className="list-disc list-inside text-[10px] text-slate-600 pl-1 mt-1">
-                    {exp.achievements.map((ach, i) => (
-                      <li key={i}>{ach}</li>
-                    ))}
-                  </ul>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section>
-            <h3 className="text-xs uppercase font-bold tracking-widest text-slate-900 border-b border-slate-300 pb-1 mb-2">Academics</h3>
-            <div className="space-y-2">
-              {portfolioData.education.map((edu) => (
-                <div key={edu.id} className="text-xs">
-                  <div className="flex justify-between font-bold text-slate-900">
-                    <span>{edu.degree} in {edu.fieldOfStudy}</span>
-                    <span>{edu.startDate} - {edu.endDate}</span>
-                  </div>
-                  <p className="text-slate-600 font-medium">{edu.institution}</p>
+                <div className="grid grid-cols-2 gap-2 mt-4 text-[11px] text-slate-500">
+                  <span>Location: {portfolioData.profile.location}</span>
+                  <span>Email: {portfolioData.profile.email}</span>
+                  <span>Phone: {portfolioData.profile.phone}</span>
+                  <span>Website: {portfolioData.profile.websiteUrl || currentUrl}</span>
                 </div>
-              ))}
+              </div>
+              {/* Printable QR backlink */}
+              <div className="flex items-center gap-3 bg-white p-2 border border-slate-200 shrink-0">
+                <div className="text-right text-[10px] max-w-[100px] leading-tight text-slate-500">
+                  Scan to explore live demo, blogs, and switch themes.
+                </div>
+                <img 
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(portfolioData.profile.qrOverrideContent || portfolioData.profile.websiteUrl || currentUrl)}`} 
+                  alt="Resume QR redirection" 
+                  className="w-14 h-14"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
             </div>
-          </section>
-        </div>
+
+            <section>
+              <h3 className="text-xs uppercase font-bold tracking-widest text-slate-900 border-b border-slate-300 pb-1 mb-2">My Profile</h3>
+              <p className="text-slate-700 leading-relaxed text-[11px]">{portfolioData.profile.aboutLong}</p>
+            </section>
+
+            <section>
+              <h3 className="text-xs uppercase font-bold tracking-widest text-slate-900 border-b border-slate-300 pb-1 mb-2">Tech Stacks</h3>
+              <div className="grid grid-cols-4 gap-4 text-[11px]">
+                {['frontend', 'backend', 'devops', 'tools'].map((cat) => {
+                  const s = portfolioData.skills.filter(sk => sk.category === cat);
+                  if (s.length === 0) return null;
+                  return (
+                    <div key={cat}>
+                      <h4 className="font-bold text-slate-800 uppercase text-[10px] mb-1">{cat}</h4>
+                      <span className="text-slate-600 font-medium">{s.map(i => i.name).join(', ')}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section>
+              <h3 className="text-xs uppercase font-bold tracking-widest text-slate-900 border-b border-slate-300 pb-1 mb-2">Work History</h3>
+              <div className="space-y-4">
+                {portfolioData.experience.map((exp) => (
+                  <div key={exp.id}>
+                    <div className="flex justify-between font-bold text-slate-900 text-xs">
+                      <span>{exp.role} @ {exp.company}</span>
+                      <span>{exp.startDate} - {exp.endDate}</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 italic mb-1">{exp.location}</p>
+                    <p className="text-[11px] text-slate-700 leading-relaxed">{exp.description}</p>
+                    <ul className="list-disc list-inside text-[10px] text-slate-600 pl-1 mt-1">
+                      {exp.achievements.map((ach, i) => (
+                        <li key={i}>{ach}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <h3 className="text-xs uppercase font-bold tracking-widest text-slate-900 border-b border-slate-300 pb-1 mb-2">Academics</h3>
+              <div className="space-y-2">
+                {portfolioData.education.map((edu) => (
+                  <div key={edu.id} className="text-xs">
+                    <div className="flex justify-between font-bold text-slate-900">
+                      <span>{edu.degree} in {edu.fieldOfStudy}</span>
+                      <span>{edu.startDate} - {edu.endDate}</span>
+                    </div>
+                    <p className="text-slate-600 font-medium">{edu.institution}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+        )}
       </div>
 
     </div>

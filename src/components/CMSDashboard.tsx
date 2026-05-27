@@ -8,7 +8,7 @@ import {
   X, Save, FileJson, Upload, RefreshCw, Plus, Trash2, Mail, 
   User, Briefcase, GraduationCap, Code, BookOpen, Layers, Inbox, AlertTriangle, CheckCircle, Globe
 } from 'lucide-react';
-import { PortfolioData, WorkExperience, Education, Project, TechStackItem, BlogPost, SubmittedMessage } from '../types';
+import { PortfolioData, WorkExperience, Education, Project, TechStackItem, BlogPost, SubmittedMessage, Publication, SectionVisibility } from '../types';
 import { defaultPortfolioData } from '../defaultData';
 import { ThemeSelector, ThemePresetVal } from './ThemeSelector';
 
@@ -23,7 +23,7 @@ interface CMSDashboardProps {
   onThemeChange: (theme: ThemePresetVal) => void;
 }
 
-type CMSTab = 'profile' | 'experience' | 'education' | 'projects' | 'skills' | 'blogs' | 'messages' | 'dataops';
+type CMSTab = 'profile' | 'experience' | 'education' | 'projects' | 'skills' | 'blogs' | 'publications' | 'messages' | 'dataops';
 
 export const CMSDashboard: React.FC<CMSDashboardProps> = ({
   data,
@@ -42,6 +42,17 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
   const [projects, setProjects] = useState<Project[]>(data.projects);
   const [skills, setSkills] = useState<TechStackItem[]>(data.skills);
   const [blogs, setBlogs] = useState<BlogPost[]>(data.blogs);
+  const [publications, setPublications] = useState<Publication[]>(data.publications || []);
+  const [visibility, setVisibility] = useState<SectionVisibility>(() => ({
+    callingCard: data.visibility?.callingCard ?? true,
+    education: data.visibility?.education ?? true,
+    experience: data.visibility?.experience ?? true,
+    projects: data.visibility?.projects ?? true,
+    skills: data.visibility?.skills ?? true,
+    blogs: data.visibility?.blogs ?? true,
+    publications: data.visibility?.publications ?? true,
+    contact: data.visibility?.contact ?? true,
+  }));
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [remoteJsonUrl, setRemoteJsonUrl] = useState('https://www.amirul.cloud/amirul.json');
@@ -73,8 +84,24 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
           setProjects(parsed.projects);
           setSkills(parsed.skills);
           setBlogs(parsed.blogs);
+          setPublications(parsed.publications || []);
 
-          onUpdateData(parsed);
+          const importedVis = {
+            callingCard: parsed.visibility?.callingCard ?? true,
+            education: parsed.visibility?.education ?? true,
+            experience: parsed.visibility?.experience ?? true,
+            projects: parsed.visibility?.projects ?? true,
+            skills: parsed.visibility?.skills ?? true,
+            blogs: parsed.visibility?.blogs ?? true,
+            publications: parsed.visibility?.publications ?? true,
+            contact: parsed.visibility?.contact ?? true,
+          };
+          setVisibility(importedVis);
+
+          onUpdateData({
+            ...parsed,
+            visibility: importedVis
+          });
           triggerNotification('Portfolio JSON file loaded successfully from URL! Interface updated.', 'success');
         } else {
           triggerNotification('Import Failed: Invalid JSON profile structure.', 'error');
@@ -325,7 +352,57 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
     triggerNotification('Blog articles published successfully!');
   };
 
+  // Publications CRUD Helpers
+  const handleAddPublication = () => {
+    const newPub: Publication = {
+      id: `pub_${Date.now()}`,
+      title: 'A New Breakthrough Research Paper',
+      authors: profile.name,
+      journal: 'International Journal of Technology and Science',
+      year: new Date().getFullYear().toString(),
+      url: 'https://scholar.google.com',
+      description: 'Highlight key objectives, methodologies, or outcomes of the research here.'
+    };
+    setPublications([newPub, ...publications]);
+  };
+
+  const handleUpdatePublication = (id: string, field: keyof Publication, value: string) => {
+    setPublications(prev => prev.map(pub => (pub.id === id ? { ...pub, [field]: value } : pub)));
+  };
+
+  const handleDeletePublication = (id: string) => {
+    setPublications(prev => prev.filter(pub => pub.id !== id));
+  };
+
+  const handleSavePublicationsList = () => {
+    onUpdateData({
+      ...data,
+      publications
+    });
+    triggerNotification('Publications updated successfully!');
+  };
+
   // Data Ops JSON handlers
+  const handleToggleVisibility = (section: keyof SectionVisibility, checked: boolean) => {
+    const updatedVisibility = {
+      ...visibility,
+      [section]: checked
+    };
+    setVisibility(updatedVisibility);
+    onUpdateData({
+      ...data,
+      profile,
+      education,
+      experience,
+      projects,
+      skills,
+      blogs,
+      publications,
+      visibility: updatedVisibility
+    });
+    triggerNotification(`Updated section visibility: ${section} is now ${checked ? 'visible' : 'hidden'}`);
+  };
+
   const handleExportJSON = () => {
     const currentDataState: PortfolioData = {
       profile,
@@ -333,7 +410,9 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
       experience,
       projects,
       skills,
-      blogs
+      blogs,
+      publications,
+      visibility
     };
 
     const dataString = JSON.stringify(currentDataState, null, 2);
@@ -367,9 +446,25 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
           setProjects(parsed.projects);
           setSkills(parsed.skills);
           setBlogs(parsed.blogs);
+          setPublications(parsed.publications || []);
+
+          const importedVis = {
+            callingCard: parsed.visibility?.callingCard ?? true,
+            education: parsed.visibility?.education ?? true,
+            experience: parsed.visibility?.experience ?? true,
+            projects: parsed.visibility?.projects ?? true,
+            skills: parsed.visibility?.skills ?? true,
+            blogs: parsed.visibility?.blogs ?? true,
+            publications: parsed.visibility?.publications ?? true,
+            contact: parsed.visibility?.contact ?? true,
+          };
+          setVisibility(importedVis);
 
           // Update parent application
-          onUpdateData(parsed);
+          onUpdateData({
+            ...parsed,
+            visibility: importedVis
+          });
           triggerNotification('Portfolio JSON file imported successfully! Interface refreshed.', 'success');
         } else {
           triggerNotification('Import Failed: Invalid JSON profile structure. Missing critical fields.', 'error');
@@ -389,6 +484,17 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
       setProjects(defaultPortfolioData.projects);
       setSkills(defaultPortfolioData.skills);
       setBlogs(defaultPortfolioData.blogs);
+      setPublications(defaultPortfolioData.publications || []);
+      setVisibility(defaultPortfolioData.visibility || {
+        callingCard: true,
+        education: true,
+        experience: true,
+        projects: true,
+        skills: true,
+        blogs: true,
+        publications: true,
+        contact: true
+      });
 
       onUpdateData(defaultPortfolioData);
       triggerNotification('Successfully restored default mock developer data.', 'success');
@@ -445,6 +551,7 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                 { id: 'projects', name: 'My Projects', icon: Code },
                 { id: 'skills', name: 'Tech Competencies', icon: Layers },
                 { id: 'blogs', name: 'Blog Engine', icon: BookOpen },
+                { id: 'publications', name: 'Publications', icon: BookOpen },
                 { id: 'messages', name: 'Inbox Recruiter', icon: Inbox, count: messages.filter(m => !m.read).length },
                 { id: 'dataops', name: 'Data Ops (Export)', icon: FileJson },
               ].map((item) => {
@@ -567,7 +674,7 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">GitHub Profile URL</label>
                     <input 
@@ -587,6 +694,16 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                     />
                   </div>
                   <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Google Scholar URL</label>
+                    <input 
+                      type="url" 
+                      value={profile.googleScholarUrl || ''} 
+                      onChange={(e) => setProfile({ ...profile, googleScholarUrl: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      placeholder="https://scholar.google.com/citations?user="
+                    />
+                  </div>
+                  <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Your Website URL (for QR code)</label>
                     <input 
                       type="url" 
@@ -598,7 +715,7 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Profile Photo Avatar URL</label>
                     <input 
@@ -608,6 +725,17 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                       className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                     />
                     <p className="text-[10px] text-slate-400 mt-1">Can be any valid Unsplash image URL or hosting path.</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">QR Code Override Content (Optional)</label>
+                    <input 
+                      type="text" 
+                      value={profile.qrOverrideContent || ''} 
+                      onChange={(e) => setProfile({ ...profile, qrOverrideContent: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      placeholder="Enter text, email, phone or URL to load on scan"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">If specified, this overrides the default live website QR code content.</p>
                   </div>
                 </div>
 
@@ -1266,6 +1394,136 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
               </div>
             )}
 
+            {/* publications TAB */}
+            {activeTab === 'publications' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center border-b border-slate-200 pb-2 mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">Academic & Project Publications</h3>
+                    <p className="text-xs text-slate-500">Add patent profiles, peer-reviewed papers, journals, or online publications here.</p>
+                  </div>
+                  <button
+                    onClick={handleAddPublication}
+                    type="button"
+                    className="inline-flex items-center gap-1 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Publication
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {publications.length === 0 ? (
+                    <div className="text-center py-10 border border-dashed border-slate-300 rounded-xl bg-slate-50">
+                      <p className="text-sm text-slate-400">No Publications configured yet.</p>
+                      <button
+                        onClick={handleAddPublication}
+                        type="button"
+                        className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold"
+                      >
+                        <Plus className="w-4 h-4" /> Add Your First Paper
+                      </button>
+                    </div>
+                  ) : (
+                    publications.map((pub, idx) => (
+                      <div key={pub.id} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                        <div className="flex justify-between items-start">
+                          <span className="text-[10px] font-mono bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-bold">
+                            Publication Item #{idx + 1}
+                          </span>
+                          <button
+                            onClick={() => handleDeletePublication(pub.id)}
+                            type="button"
+                            className="p-1 px-2 border border-slate-200 text-rose-500 hover:bg-rose-50 text-xs rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Remove
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                          <div className="sm:col-span-3">
+                            <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Publication Title</label>
+                            <input 
+                              type="text" 
+                              value={pub.title} 
+                              onChange={(e) => handleUpdatePublication(pub.id, 'title', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs font-semibold text-slate-900"
+                              placeholder="e.g. Towards Scalable Serverless Computing Architectures"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Publication Year</label>
+                            <input 
+                              type="text" 
+                              value={pub.year} 
+                              onChange={(e) => handleUpdatePublication(pub.id, 'year', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-900 font-semibold"
+                              placeholder="e.g. 2026"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Authors List</label>
+                            <input 
+                              type="text" 
+                              value={pub.authors} 
+                              onChange={(e) => handleUpdatePublication(pub.id, 'authors', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-900"
+                              placeholder="e.g. Amirul Sadikin, Alex Mercer"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Journal / Publisher / Conference Venue</label>
+                            <input 
+                              type="text" 
+                              value={pub.journal} 
+                              onChange={(e) => handleUpdatePublication(pub.id, 'journal', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-900"
+                              placeholder="e.g. IEEE Transactions on Cloud Computing"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">External Resource Link (Optional)</label>
+                            <input 
+                              type="url" 
+                              value={pub.url || ''} 
+                              onChange={(e) => handleUpdatePublication(pub.id, 'url', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs font-mono text-slate-900"
+                              placeholder="e.g. https://scholar.google.com/citations?..."
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Abstract / Description</label>
+                            <textarea 
+                              value={pub.description || ''} 
+                              onChange={(e) => handleUpdatePublication(pub.id, 'description', e.target.value)}
+                              rows={3}
+                              className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs leading-relaxed text-slate-900"
+                              placeholder="Provide a brief summary or citation impact info..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="pt-4 flex justify-end">
+                  <button
+                    onClick={handleSavePublicationsList}
+                    type="button"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm rounded-lg shadow-lg shadow-indigo-500/10 transition-colors cursor-pointer"
+                  >
+                    <Save className="w-4 h-4" /> Save Publications List
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* messages/inbox TAB */}
             {activeTab === 'messages' && (
               <div className="space-y-6">
@@ -1334,7 +1592,7 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2 mb-4">Aesthetic Theme Templates</h3>
-                  <p className="text-xs text-slate-500 -mt-2.5 mb-5">Select a custom design template for this portfolio dashboard. Recruiters visiting via custom parameter links will render in this visual style.</p>
+                  <p className="text-xs text-slate-500 -mt-2.5 mb-5 font-sans">Select a custom design template for this portfolio dashboard. Recruiters visiting via custom parameter links will render in this visual style.</p>
                 </div>
 
                 <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-slate-900">
@@ -1342,8 +1600,129 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                 </div>
 
                 <div className="pt-4 border-t border-slate-200">
+                  <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2 mb-4">Portfolio Section Visibility</h3>
+                  <p className="text-xs text-slate-500 -mt-2.5 mb-5 font-sans">Toggle the switches below to activate or hide entire sections on the public bento-grid portfolio representation.</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-slate-900">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Switch 1: Calling Card */}
+                    <label className="flex items-center gap-3 cursor-pointer group bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-150 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={visibility.callingCard ?? true}
+                        onChange={(e) => handleToggleVisibility('callingCard', e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 group-hover:text-slate-900">Calling Card</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5 font-sans">Flip/flat widget</span>
+                      </div>
+                    </label>
+
+                    {/* Switch 2: Experience */}
+                    <label className="flex items-center gap-3 cursor-pointer group bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-150 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={visibility.experience ?? true}
+                        onChange={(e) => handleToggleVisibility('experience', e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 group-hover:text-slate-900">Experience</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5 font-sans font-sans">Timeline cards</span>
+                      </div>
+                    </label>
+
+                    {/* Switch 3: Education */}
+                    <label className="flex items-center gap-3 cursor-pointer group bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-150 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={visibility.education ?? true}
+                        onChange={(e) => handleToggleVisibility('education', e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 group-hover:text-slate-900">Education</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5 font-sans">Academic log</span>
+                      </div>
+                    </label>
+
+                    {/* Switch 4: Projects */}
+                    <label className="flex items-center gap-3 cursor-pointer group bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-150 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={visibility.projects ?? true}
+                        onChange={(e) => handleToggleVisibility('projects', e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 group-hover:text-slate-900">Projects Grid</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5 font-sans">Engineering cases</span>
+                      </div>
+                    </label>
+
+                    {/* Switch 5: Skills */}
+                    <label className="flex items-center gap-3 cursor-pointer group bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-150 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={visibility.skills ?? true}
+                        onChange={(e) => handleToggleVisibility('skills', e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 group-hover:text-slate-900">Technical Skills</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5 font-sans">Proficiency matrix</span>
+                      </div>
+                    </label>
+
+                    {/* Switch 6: Articles / Blogs */}
+                    <label className="flex items-center gap-3 cursor-pointer group bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-150 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={visibility.blogs ?? true}
+                        onChange={(e) => handleToggleVisibility('blogs', e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 group-hover:text-slate-900">Technical Journal</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5 font-sans">Blogs Spec Deck</span>
+                      </div>
+                    </label>
+
+                    {/* Switch 7: Publications */}
+                    <label className="flex items-center gap-3 cursor-pointer group bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-150 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={visibility.publications ?? true}
+                        onChange={(e) => handleToggleVisibility('publications', e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 group-hover:text-slate-900">Publications</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5 font-sans">Scholar list</span>
+                      </div>
+                    </label>
+
+                    {/* Switch 8: Contact Inbox */}
+                    <label className="flex items-center gap-3 cursor-pointer group bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-150 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={visibility.contact ?? true}
+                        onChange={(e) => handleToggleVisibility('contact', e.target.checked)}
+                        className="w-4 h-4 rounded text-indigo-600 border-slate-300 focus:ring-indigo-500 accent-indigo-600 cursor-pointer"
+                      />
+                      <div>
+                        <span className="block text-xs font-bold text-slate-700 group-hover:text-slate-900">Contact Inbox</span>
+                        <span className="block text-[10px] text-slate-400 mt-0.5 font-sans">Messaging form</span>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-200">
                   <h3 className="text-lg font-bold text-slate-900 border-b border-slate-200 pb-2 mb-4">Profile Data Migration Tools</h3>
-                  <p className="text-xs text-slate-500 -mt-2.5 mb-5">Fully control package portability. Download your custom CV and profile datasets or restore defaults.</p>
+                  <p className="text-xs text-slate-500 -mt-2.5 mb-5 font-sans">Fully control package portability. Download your custom CV and profile datasets or restore defaults.</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

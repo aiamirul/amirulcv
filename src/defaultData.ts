@@ -19,7 +19,9 @@ export const defaultPortfolioData: PortfolioData = {
     avatarUrl: "https://i.imgur.com/4Qdm6OI.png",
     aboutBrief: "Highly analytical and detail-oriented systems architect with 8+ years of experience engineering high-performance decentralized cloud applications, real-time message brokers, and fully responsive user interfaces. Champion of clean code, automated testing, and inclusive accessibility.",
     aboutLong: "I am a passionate software engineer and systems architect who thrives at the intersection of robust backend infrastructure and stellar, user-centric frontend interfaces. Over the past eight years, I've designed cloud systems supporting over 50,000 concurrent websocket connections, engineered responsive frontends that slash loading latency by 45%, and mentored dozens of junior engineers. I believe in writing readable, modular code, enforcing rigorous accessibility standards (WCAG 2.1 AA), and bridging the gap between product vision and system scalability.",
-    resumeSubtitle: "Senior Software Engineer • System Builder • Full-Stack Generalist"
+    resumeSubtitle: "Senior Software Engineer • System Builder • Full-Stack Generalist",
+    googleScholarUrl: "https://scholar.google.com",
+    qrOverrideContent: ""
   },
   education: [
     {
@@ -390,5 +392,26 @@ Ensure text matches or exceeds a contrast ratio of 4.5:1 against the background 
       "readTime": "8 min read",
       "coverImage": "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&q=80&w=400"
     }
-  ]
+  ],
+  publications: [
+    {
+      id: "pub_1",
+      title: "Real-Time Decentralized Synchronization in Cloud Analytical Environments",
+      authors: "Amirul Sadikin, Jane Doe, Sarah Smith",
+      journal: "IEEE Transactions on Cloud Computing",
+      year: "2024",
+      url: "https://scholar.google.com",
+      description: "Proposed a novel conflict-free replicated data type (CRDT) optimization mapping for low-latency state synchronization with high-availability cloud targets."
+    }
+  ],
+  visibility: {
+    callingCard: true,
+    education: true,
+    experience: true,
+    projects: true,
+    skills: true,
+    blogs: true,
+    publications: true,
+    contact: true
+  }
 };
