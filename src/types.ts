@@ -94,6 +94,9 @@ export interface Publication {
   year: string;
   url?: string;
   description?: string;
+  pdfUrl?: string;
+  pdfFileName?: string;
+  publicationDate?: string;
 }
 
 export interface SectionVisibility {

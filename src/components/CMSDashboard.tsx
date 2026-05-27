@@ -1496,6 +1496,41 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                               placeholder="e.g. https://scholar.google.com/citations?..."
                             />
                           </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div className="sm:col-span-2">
+                              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">PDF Download URL</label>
+                              <input 
+                                type="url" 
+                                value={pub.pdfUrl || ''} 
+                                onChange={(e) => handleUpdatePublication(pub.id, 'pdfUrl', e.target.value)}
+                                className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs font-mono text-slate-900"
+                                placeholder="e.g. https://domain.edu/papers/paper-id.pdf"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">PDF File Name</label>
+                              <input 
+                                type="text" 
+                                value={pub.pdfFileName || ''} 
+                                onChange={(e) => handleUpdatePublication(pub.id, 'pdfFileName', e.target.value)}
+                                className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-900 font-semibold"
+                                placeholder="e.g. scalable_serverless_2026.pdf"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Publication Date (Optional)</label>
+                            <input 
+                              type="text" 
+                              value={pub.publicationDate || ''} 
+                              onChange={(e) => handleUpdatePublication(pub.id, 'publicationDate', e.target.value)}
+                              className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs text-slate-900"
+                              placeholder="e.g. 2026-05-27, or May 2026"
+                            />
+                          </div>
+
                           <div>
                             <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Abstract / Description</label>
                             <textarea 

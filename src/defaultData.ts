@@ -401,7 +401,10 @@ Ensure text matches or exceeds a contrast ratio of 4.5:1 against the background 
       journal: "IEEE Transactions on Cloud Computing",
       year: "2024",
       url: "https://scholar.google.com",
-      description: "Proposed a novel conflict-free replicated data type (CRDT) optimization mapping for low-latency state synchronization with high-availability cloud targets."
+      description: "Proposed a novel conflict-free replicated data type (CRDT) optimization mapping for low-latency state synchronization with high-availability cloud targets.",
+      pdfUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+      pdfFileName: "RealTime_Decentralized_Synchronization_TCC2024.pdf",
+      publicationDate: "2024-06-15"
     }
   ],
   visibility: {

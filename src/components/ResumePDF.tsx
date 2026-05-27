@@ -228,14 +228,31 @@ export const ResumePDF: React.FC<ResumePreviewProps> = ({
             {data.publications && data.publications.length > 0 && (
               <section className="print-page-break">
                 <h2 className="text-xs uppercase font-extrabold tracking-widest text-slate-800 border-b border-slate-300 pb-1.5 mb-3.5">Publications</h2>
-                <ul className="space-y-3.5 list-none p-0">
+                <ul className="space-y-4 list-none p-0">
                   {data.publications.map((pub) => (
                     <li key={pub.id} className="text-xs text-slate-700">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1 font-bold text-slate-900">
                         <span>{pub.title}</span>
-                        <span className="font-mono text-slate-500 font-semibold">{pub.year}</span>
+                        <span className="font-mono text-slate-500 font-semibold">{pub.publicationDate || pub.year}</span>
                       </div>
                       <div className="text-[11px] text-slate-600 mt-0.5">{pub.authors} &bull; <span className="italic">{pub.journal}</span></div>
+                      
+                      {/* PDF download details */}
+                      {(pub.pdfUrl || pub.pdfFileName) && (
+                        <div className="text-[10px] text-slate-500 mt-1 flex flex-wrap gap-x-3 gap-y-1 bg-slate-55 p-1.5 rounded border border-slate-200 font-mono">
+                          {pub.pdfUrl && (
+                            <span>
+                              <strong>PDF URL:</strong> <a href={pub.pdfUrl} className="underline text-indigo-600 font-medium" target="_blank" rel="noopener noreferrer">{pub.pdfUrl}</a>
+                            </span>
+                          )}
+                          {pub.pdfFileName && (
+                            <span>
+                              <strong>File:</strong> {pub.pdfFileName}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {pub.description && <p className="text-[11px] text-slate-500 mt-1 leading-normal">{pub.description}</p>}
                     </li>
                   ))}
@@ -466,7 +483,7 @@ export const ResumePDF: React.FC<ResumePreviewProps> = ({
                 <h3 className="text-xs uppercase font-extrabold tracking-widest text-slate-900 border-b border-slate-300 pb-1.5 mb-4">
                   Scientific Publications & Projects
                 </h3>
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-5">
                   {data.publications.map((pub) => (
                     <div key={pub.id} className="flex flex-col">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-1">
@@ -474,12 +491,29 @@ export const ResumePDF: React.FC<ResumePreviewProps> = ({
                           {pub.title}
                         </h4>
                         <span className="text-xs font-mono text-slate-500 font-bold leading-none">
-                          {pub.year}
+                          {pub.publicationDate || pub.year}
                         </span>
                       </div>
-                      <h5 className="text-[11px] text-slate-600 font-medium">
+                      <h5 className="text-[11px] text-slate-600 font-medium mt-0.5">
                         {pub.authors} &bull; <span className="italic">{pub.journal}</span>
                       </h5>
+
+                      {/* PDF download details */}
+                      {(pub.pdfUrl || pub.pdfFileName) && (
+                        <div className="text-[10px] text-slate-500 mt-1 flex flex-wrap gap-x-3 gap-y-1 bg-slate-50 p-1.5 rounded border border-slate-200 font-mono">
+                          {pub.pdfUrl && (
+                            <span>
+                              <strong>PDF URL:</strong> <a href={pub.pdfUrl} className="underline text-indigo-600 font-medium" target="_blank" rel="noopener noreferrer">{pub.pdfUrl}</a>
+                            </span>
+                          )}
+                          {pub.pdfFileName && (
+                            <span>
+                              <strong>File:</strong> {pub.pdfFileName}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {pub.description && (
                         <p className="text-xs text-slate-500 mt-1 leading-normal">
                           {pub.description}

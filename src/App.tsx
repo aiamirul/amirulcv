@@ -8,7 +8,8 @@ import {
   Briefcase, GraduationCap, Code, Layers, BookOpen, Mail, 
   Settings, Printer, ChevronRight, Github, Linkedin, ExternalLink, 
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
-  CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw
+  CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw,
+  FileText, Download
 } from 'lucide-react';
 import { PortfolioData, Project, BlogPost, SubmittedMessage, Publication } from './types';
 import { defaultPortfolioData } from './defaultData';
@@ -1259,22 +1260,50 @@ export default function App() {
                 {portfolioData.publications.map((pub) => (
                   <div key={pub.id} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-2xl flex flex-col justify-between hover:border-[var(--accent-primary)]/45 shadow-sm transition-all duration-300">
                     <div>
-                      <div className="flex justify-between items-start gap-4 mb-2">
-                        <span className="text-[10px] font-mono font-bold uppercase text-[var(--accent-primary)] bg-[var(--accent-light)] px-2 py-0.5 rounded">
-                          {pub.year}
-                        </span>
-                        {pub.url && (
-                          <a
-                            href={pub.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-[var(--accent-primary)] hover:underline inline-flex items-center gap-1 font-semibold"
-                          >
-                            Read Paper <ExternalLink className="w-3 h-3" />
-                          </a>
-                        )}
+                      <div className="flex flex-wrap justify-between items-start gap-3 mb-3 pb-2.5 border-b border-[var(--border-color)]/60">
+                        <div className="flex flex-wrap items-center gap-2">
+                          {pub.publicationDate ? (
+                            <span className="text-[10px] font-mono font-bold uppercase text-[var(--accent-primary)] bg-[var(--accent-light)] px-2.5 py-1 rounded flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[var(--accent-primary)]" /> {pub.publicationDate}
+                            </span>
+                          ) : pub.year ? (
+                            <span className="text-[10px] font-mono font-bold uppercase text-[var(--accent-primary)] bg-[var(--accent-light)] px-2.5 py-1 rounded flex items-center gap-1">
+                              <Calendar className="w-3 h-3 text-[var(--accent-primary)]" /> {pub.year}
+                            </span>
+                          ) : null}
+
+                          {pub.pdfFileName && (
+                            <span className="text-[10px] font-mono font-semibold text-[var(--text-secondary)] bg-[var(--bg-tertiary)] px-2 py-1 rounded border border-[var(--border-color)]/60 flex items-center gap-1.5 shrink-0 max-w-[150px] truncate" title={pub.pdfFileName}>
+                              <FileText className="w-3 h-3 text-[var(--text-secondary)] shrink-0" /> {pub.pdfFileName}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                          {pub.pdfUrl && (
+                            <a
+                              href={pub.pdfUrl}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline inline-flex items-center gap-1.5 font-bold bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md transition-colors border border-emerald-200/50 dark:border-emerald-850"
+                            >
+                              <Download className="w-3.5 h-3.5" /> Download PDF
+                            </a>
+                          )}
+                          {pub.url && (
+                            <a
+                              href={pub.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-[var(--accent-primary)] hover:underline inline-flex items-center gap-1 font-semibold"
+                            >
+                              Read Info <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
                       </div>
-                      <h4 className="font-bold text-sm text-[var(--text-primary)] leading-tight mb-1.5 font-display">
+                      <h4 className="font-bold text-sm text-[var(--text-primary)] leading-tight mb-2 font-display">
                         {pub.title}
                       </h4>
                       <p className="text-xs text-[var(--text-primary)] font-medium mb-1">
@@ -1726,14 +1755,33 @@ export default function App() {
             {portfolioData.publications && portfolioData.publications.length > 0 && (
               <section className="print-page-break">
                 <h2 className="text-xs uppercase font-extrabold tracking-widest text-slate-855 border-b border-slate-300 pb-1.5 mb-3">Publications</h2>
-                <ul className="space-y-3 list-none p-0">
+                <ul className="space-y-4 list-none p-0">
                   {portfolioData.publications.map((pub) => (
                     <li key={pub.id} className="text-xs text-slate-700">
                       <div className="flex justify-between font-bold text-slate-900 text-xs">
                         <span>{pub.title}</span>
-                        <span className="font-mono">{pub.year}</span>
+                        <span className="font-mono">{pub.publicationDate || pub.year}</span>
                       </div>
-                      <div className="text-[10px] text-slate-600 mt-0.5">{pub.authors} &bull; <span className="italic">{pub.journal}</span></div>
+                      <div className="text-[10px] text-slate-600 mt-0.5">
+                        {pub.authors} &bull; <span className="italic">{pub.journal}</span>
+                      </div>
+                      
+                      {/* PDF download details */}
+                      {(pub.pdfUrl || pub.pdfFileName) && (
+                        <div className="text-[10px] text-slate-500 mt-1 flex flex-wrap gap-x-3 gap-y-1 bg-slate-50 p-1.5 rounded border border-slate-200 font-mono">
+                          {pub.pdfUrl && (
+                            <span>
+                              <strong>PDF URL:</strong> <a href={pub.pdfUrl} className="underline text-indigo-600 font-medium" target="_blank" rel="noopener noreferrer">{pub.pdfUrl}</a>
+                            </span>
+                          )}
+                          {pub.pdfFileName && (
+                            <span>
+                              <strong>File:</strong> {pub.pdfFileName}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
                       {pub.description && <p className="text-[11px] text-slate-500 mt-1 leading-normal">{pub.description}</p>}
                     </li>
                   ))}
