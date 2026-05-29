@@ -145,6 +145,9 @@ export const defaultPortfolioData: PortfolioData = {
       "briefDescription": "High-performance key-value distributed cache database featuring replication, memory eviction policies, and HTTP/gRPC interfaces.",
       "longDescription": "An experimental, deeply performant key-value store crafted to explore distributed storage mechanics. It supports standard CRUD operations over a lightweight JSON-over-HTTP or gRPC interface. Features active TTL-based memory eviction, leader-follower synchronization replication logs, and a clean web-based command execution console with a real-time cluster health visualizer.",
       "coverImage": "https://i.imgur.com/vp4qN2o.png",
+      "images": [
+        "https://i.imgur.com/dE9ajMb.mp4"
+      ],
       "tags": [
         "Go",
         "gRPC",

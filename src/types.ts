@@ -53,6 +53,7 @@ export interface Project {
   briefDescription: string;
   longDescription: string;
   coverImage: string;
+  images?: string[];
   tags: string[];
   githubLink?: string;
   liveLink?: string;

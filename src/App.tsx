@@ -6,7 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Briefcase, GraduationCap, Code, Layers, BookOpen, Mail, 
-  Settings, Printer, ChevronRight, Github, Linkedin, ExternalLink, 
+  Settings, Printer, ChevronLeft, ChevronRight, Github, Linkedin, ExternalLink, 
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
   CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw,
   FileText, Download, Sparkles
@@ -88,6 +88,12 @@ export default function App() {
   const [cvPrintMode, setCvPrintMode] = useState<'fancy' | 'plain'>('fancy');
   const [cvShowProfilePic, setCvShowProfilePic] = useState<boolean>(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [projectCarouselIndex, setProjectCarouselIndex] = useState(0);
+
+  useEffect(() => {
+    setProjectCarouselIndex(0);
+  }, [selectedProject]);
+
   const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
   const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
   const [cardViewMode, setCardViewMode] = useState<'flip' | 'all-in-one'>('flip');
@@ -905,9 +911,9 @@ export default function App() {
               <div>
                 <div className="flex items-center gap-1.5 mb-1 bg-transparent">
                   <Code className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
-                  <h3 className="text-lg font-extrabold uppercase tracking-wider font-display">Engineering Case Studies</h3>
+                  <h3 className="text-lg font-extrabold uppercase tracking-wider font-display">Projects</h3>
                 </div>
-                <p className="text-xs text-[var(--text-secondary)]">Click on any case article to review comprehensive architectural diagrams and parameters.</p>
+                <p className="text-xs text-[var(--text-secondary)]">Click on any project to review comprehensive architectural details, screenshots, and live parameters.</p>
               </div>
 
               {/* Filtering Controls */}
@@ -1475,20 +1481,108 @@ export default function App() {
           <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl relative animate-scale-up">
             
             {/* Aspect image cover banner */}
-            <div className="relative aspect-video border-b border-[var(--border-color)]">
-              <img 
-                src={selectedProject.coverImage} 
-                alt={selectedProject.title} 
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-              <button 
-                onClick={() => setSelectedProject(null)}
-                className="absolute top-4 right-4 w-9 h-9 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white cursor-pointer transition-colors"
-                aria-label="Close project log"
-              >
-                <X className="w-4 h-4" />
-              </button>
+            <div className="relative aspect-video border-b border-[var(--border-color)] group/carousel">
+              {(() => {
+                const carouselImages = [
+                  selectedProject.coverImage,
+                  ...(selectedProject.images || [])
+                ].filter((url, idx, self) => url && self.indexOf(url) === idx);
+                
+                const hasMultiple = carouselImages.length > 1;
+                const currentImgUrl = carouselImages[projectCarouselIndex] || selectedProject.coverImage;
+                
+                const isVideoUrl = (url?: string): boolean => {
+                  if (!url) return false;
+                  return /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url) || url.includes('/mp4') || url.includes('.mp4');
+                };
+
+                return (
+                  <>
+                    {isVideoUrl(currentImgUrl) ? (
+                      <video 
+                        key={currentImgUrl}
+                        src={currentImgUrl}
+                        controls
+                        autoPlay
+                        muted
+                        playsInline
+                        loop
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img 
+                        src={currentImgUrl} 
+                        alt={`${selectedProject.title} slide ${projectCarouselIndex + 1}`} 
+                        className="w-full h-full object-cover transition-all duration-350"
+                        referrerPolicy="no-referrer"
+                      />
+                    )}
+
+                    {/* Close action button */}
+                    <button 
+                      onClick={() => setSelectedProject(null)}
+                      className="absolute top-4 right-4 z-10 w-9 h-9 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white cursor-pointer transition-colors shadow-md"
+                      aria-label="Close project details"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+
+                    {hasMultiple && (
+                      <>
+                        {/* Left Chevron arrow */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProjectCarouselIndex(prev => (prev === 0 ? carouselImages.length - 1 : prev - 1));
+                          }}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/75 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95"
+                          title="Previous Slide"
+                          aria-label="Previous Slide"
+                        >
+                          <ChevronLeft className="w-5 h-5" />
+                        </button>
+
+                        {/* Right Chevron arrow */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setProjectCarouselIndex(prev => (prev === carouselImages.length - 1 ? 0 : prev + 1));
+                          }}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 hover:bg-black/75 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105 active:scale-95"
+                          title="Next Slide"
+                          aria-label="Next Slide"
+                        >
+                          <ChevronRight className="w-5 h-5" />
+                        </button>
+
+                        {/* Slide counters indicator badge */}
+                        <div className="absolute top-4 left-4 px-2.5 py-1 rounded-md bg-black/60 text-white font-mono text-[9px] font-bold tracking-wider select-none shadow">
+                          {projectCarouselIndex + 1} / {carouselImages.length}
+                        </div>
+
+                        {/* Slide dots selector indicators container */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-xs select-none">
+                          {carouselImages.map((_, dotIdx) => (
+                            <button
+                              key={dotIdx}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProjectCarouselIndex(dotIdx);
+                              }}
+                              className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                                dotIdx === projectCarouselIndex 
+                                  ? 'bg-white scale-125' 
+                                  : 'bg-white/40 hover:bg-white/70'
+                              }`}
+                              aria-label={`Go to slide ${dotIdx + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })()}
             </div>
 
             <div className="p-6 md:p-8 space-y-6">

@@ -251,6 +251,7 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
       briefDescription: 'Brief description representing user-facing outcomes.',
       longDescription: 'Long comprehensive analysis illustrating core databases, rendering techniques, and layouts involved.',
       coverImage: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=400',
+      images: [],
       tags: ['TypeScript', 'Vite', 'React'],
       githubLink: 'https://github.com',
       liveLink: 'https://example.com',
@@ -1169,6 +1170,23 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                             className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs"
                           />
                         </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5 flex justify-between items-center">
+                          <span>Carousel Slide Media URL(s) (Optional)</span>
+                          <span className="text-[9px] text-slate-400 capitalize font-normal">one URL per line</span>
+                        </label>
+                        <textarea 
+                          value={(proj.images || []).join('\n')} 
+                          onChange={(e) => {
+                            const lines = e.target.value.split('\n').map(l => l.trim()).filter(Boolean);
+                            handleUpdateProject(proj.id, 'images', lines);
+                          }}
+                          placeholder="e.g.&#10;https://i.imgur.com/image1.png&#10;https://i.imgur.com/image2.png"
+                          rows={2}
+                          className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded text-xs font-mono"
+                        />
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
