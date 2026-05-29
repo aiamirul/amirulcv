@@ -9,28 +9,38 @@ import {
   Settings, Printer, ChevronRight, Github, Linkedin, ExternalLink, 
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
   CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw,
-  FileText, Download
+  FileText, Download, Sparkles
 } from 'lucide-react';
 import { PortfolioData, Project, BlogPost, SubmittedMessage, Publication } from './types';
 import { defaultPortfolioData } from './defaultData';
 import { ThemeSelector, ThemePresetVal, THEME_OPTIONS } from './components/ThemeSelector';
 import { CMSDashboard } from './components/CMSDashboard';
 import { ResumePDF } from './components/ResumePDF';
+import { AiAssistantModal } from './components/AiAssistantModal';
+import { sortTimelineItems } from './utils/dateSorter';
 
 export default function App() {
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
   // 1. Core Profile & Portfolio State
   const [portfolioData, setPortfolioData] = useState<PortfolioData>(() => {
+    let data = defaultPortfolioData;
     const cached = localStorage.getItem('developer-portfolio-schema');
     if (cached) {
       try {
-        return JSON.parse(cached);
+        data = JSON.parse(cached);
       } catch (err) {
         console.error('Failed to parse cached portfolio data', err);
       }
     }
-    return defaultPortfolioData;
+    // Auto-sort timeline part on load
+    if (data.experience) {
+      data.experience = sortTimelineItems(data.experience);
+    }
+    if (data.education) {
+      data.education = sortTimelineItems(data.education);
+    }
+    return data;
   });
 
   const vis = {
@@ -73,6 +83,7 @@ export default function App() {
 
   // 4. Interface state togglers
   const [isCmsOpen, setIsCmsOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isResumeOpen, setIsResumeOpen] = useState(false);
   const [cvPrintMode, setCvPrintMode] = useState<'fancy' | 'plain'>('fancy');
   const [cvShowProfilePic, setCvShowProfilePic] = useState<boolean>(true);
@@ -104,46 +115,62 @@ export default function App() {
     return params.get('mode') === 'dev';
   });
 
-  // Optional: check for loadjson query parameter on load
+  // Optional: check for loadjson query parameter on load, fallback/default to specified URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    let loadJsonUrl = params.get('loadjson');
+    let loadJsonUrl = params.get('loadjson') || 'https://www.amirul.cloud/data/amirul.json';
     if (params.has('loadjson')) {
-      if (!loadJsonUrl || loadJsonUrl === 'true' || loadJsonUrl === '1') {
-        loadJsonUrl = 'https://www.amirul.cloud/amirul.json';
+      const qVal = params.get('loadjson');
+      if (!qVal || qVal === 'true' || qVal === '1') {
+        loadJsonUrl = 'https://www.amirul.cloud/data/amirul.json';
+      } else {
+        loadJsonUrl = qVal;
       }
     }
 
     if (loadJsonUrl) {
-      setImportStatus({ status: 'loading', message: `Importing remote portfolio schema from: ${loadJsonUrl}...` });
+      setImportStatus({ status: 'loading', message: `Checking for online/remote portfolio schema updates...` });
       fetch(loadJsonUrl)
         .then(response => {
           if (!response.ok) {
-            throw new Error(`HTTP Error ${response.status}`);
+            console.log('Remote portfolio fetch failed response:', response);
+            throw new Error(`HTTP Error status ${response.status}`);
           }
           return response.json();
         })
         .then(data => {
           if (data && data.profile && Array.isArray(data.projects) && Array.isArray(data.experience)) {
-            setPortfolioData(data);
-            localStorage.setItem('developer-portfolio-schema', JSON.stringify(data));
-            setImportStatus({ status: 'success', message: `Portfolio schema successfully loaded and rendered from ${loadJsonUrl}!` });
+            // Apply sorting for safety
+            const sorted = { ...data };
+            if (sorted.experience) sorted.experience = sortTimelineItems(sorted.experience);
+            if (sorted.education) sorted.education = sortTimelineItems(sorted.education);
+            setPortfolioData(sorted);
+            localStorage.setItem('developer-portfolio-schema', JSON.stringify(sorted));
+            setImportStatus({ status: 'success', message: 'Portfolio schema successfully synchronized!' });
             setTimeout(() => {
               setImportStatus({ status: 'idle', message: '' });
-            }, 6000);
+            }, 3000);
           } else {
             throw new Error('Fetched file structure does not match standard portfolio data schema configuration.');
           }
         })
         .catch(err => {
-          console.error('Error importing custom layout via URL query:', err);
+          console.log('Error importing custom layout via URL or default fetch:', err);
+          
+          // Use default JSON constant
+          const sorted = { ...defaultPortfolioData };
+          if (sorted.experience) sorted.experience = sortTimelineItems(sorted.experience);
+          if (sorted.education) sorted.education = sortTimelineItems(sorted.education);
+          setPortfolioData(sorted);
+          localStorage.setItem('developer-portfolio-schema', JSON.stringify(sorted));
+
           setImportStatus({
             status: 'error',
-            message: `Failed to fetch remote JSON schema: ${err instanceof Error ? err.message : String(err)}`
+            message: `Loaded offline system template.`
           });
           setTimeout(() => {
             setImportStatus({ status: 'idle', message: '' });
-          }, 8000);
+          }, 3000);
         });
     }
   }, []);
@@ -156,8 +183,15 @@ export default function App() {
 
   // Synchronize dynamic portfolio changes directly to local storage cache
   const handleUpdateData = (newData: PortfolioData) => {
-    setPortfolioData(newData);
-    localStorage.setItem('developer-portfolio-schema', JSON.stringify(newData));
+    const sorted = { ...newData };
+    if (sorted.experience) {
+      sorted.experience = sortTimelineItems(sorted.experience);
+    }
+    if (sorted.education) {
+      sorted.education = sortTimelineItems(sorted.education);
+    }
+    setPortfolioData(sorted);
+    localStorage.setItem('developer-portfolio-schema', JSON.stringify(sorted));
   };
 
   // Handle Contact Form Submission
@@ -292,14 +326,26 @@ export default function App() {
           </nav>
 
           <div className="flex items-center gap-3">
-            {/* Quick dashboard trigger */}
+            {/* Sparkles AI button */}
             <button
-              onClick={() => setIsCmsOpen(true)}
-              className="text-xs font-bold uppercase tracking-wider bg-[var(--accent-light)] hover:bg-[var(--accent-primary)] text-[var(--accent-primary)] hover:text-white px-3.5 py-1.5 rounded-lg border border-[var(--accent-primary)]/20 transition-all cursor-pointer flex items-center gap-1.5 focus:ring-2 focus:ring-[var(--accent-primary)]"
+              onClick={() => setIsAiModalOpen(true)}
+              className="text-xs font-bold uppercase tracking-wider bg-purple-500/10 hover:bg-purple-600 hover:text-white text-purple-600 dark:text-purple-400 px-3.5 py-1.5 rounded-lg border border-purple-500/20 transition-all cursor-pointer flex items-center gap-1.5 focus:ring-2 focus:ring-purple-500"
+              title="Open Dynamic AI Interview & QA Assistant Room"
             >
-              <Settings className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">CMS Panel</span>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Talk to my AI Agent</span>
             </button>
+
+            {/* Quick dashboard trigger (Dev Mode Only) */}
+            {isDevMode && (
+              <button
+                onClick={() => setIsCmsOpen(true)}
+                className="text-xs font-bold uppercase tracking-wider bg-[var(--accent-light)] hover:bg-[var(--accent-primary)] text-[var(--accent-primary)] hover:text-white px-3.5 py-1.5 rounded-lg border border-[var(--accent-primary)]/20 transition-all cursor-pointer flex items-center gap-1.5 focus:ring-2 focus:ring-[var(--accent-primary)]"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">CMS Panel</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -1637,6 +1683,16 @@ export default function App() {
           onChangePrintMode={setCvPrintMode}
           showProfilePic={cvShowProfilePic}
           onChangeShowProfilePic={setCvShowProfilePic}
+        />
+      )}
+
+      {/* ──────────────────────────────────────────────────────────────────
+          AI ASSISTANT SEED/PROMPT ROOM MODAL (No-Print)
+          ────────────────────────────────────────────────────────────────── */}
+      {isAiModalOpen && (
+        <AiAssistantModal 
+          data={portfolioData}
+          onClose={() => setIsAiModalOpen(false)}
         />
       )}
 

@@ -739,6 +739,45 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                   </div>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">AI Agent Live Call / Chat Link (Optional)</label>
+                    <input 
+                      type="url" 
+                      value={profile.aiAgentUrl || ''} 
+                      onChange={(e) => setProfile({ ...profile, aiAgentUrl: e.target.value })}
+                      className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                      placeholder="e.g. https://vapi.ai/talk-to-my-agent-xyz or direct AI call link"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Provides a 'Talk Now (at my expense)' action in the AI Agent Room modal. Leave empty to hide.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1">AI Prompt Customization Mode</label>
+                    <select
+                      value={profile.aiPromptMode || 'append'}
+                      onChange={(e) => setProfile({ ...profile, aiPromptMode: e.target.value as 'replace' | 'append' })}
+                      className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    >
+                      <option value="append">Append Mode (Add as extra custom notes/guidelines)</option>
+                      <option value="replace">Replace Mode (Discard default prompt, replace entirely)</option>
+                    </select>
+                    <p className="text-[10px] text-slate-400 mt-1">Determine if your instructions combine with or completely override the template.</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Custom Prompt Guidelines (Optional)</label>
+                  <textarea 
+                    value={profile.aiCustomPrompt || ''} 
+                    onChange={(e) => setProfile({ ...profile, aiCustomPrompt: e.target.value })}
+                    rows={4}
+                    className="w-full px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                    placeholder="e.g. You are talking to a venture capitalist, focus heavily on equity structures. Or put absolute system overrides here."
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">This text is seamlessly merged into your Sparkles AI Master Prompt according to selected mode.</p>
+                </div>
+
                 <div>
                   <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Brief Introduction Banner (1-2 sentences)</label>
                   <textarea 

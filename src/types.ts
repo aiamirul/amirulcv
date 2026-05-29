@@ -19,6 +19,9 @@ export interface ProfileInfo {
   resumeSubtitle: string;
   googleScholarUrl?: string;
   qrOverrideContent?: string;
+  aiAgentUrl?: string;
+  aiCustomPrompt?: string;
+  aiPromptMode?: 'replace' | 'append';
 }
 
 export interface Education {
