@@ -1458,7 +1458,7 @@ User Query message: ${userMsg}`;
             <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
               <Briefcase className="w-5 h-5 text-[var(--accent-primary)]" />
               <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
-                Chronological Archive & Achievements
+                Work Experience
               </h2>
             </div>
 
@@ -1507,7 +1507,7 @@ User Query message: ${userMsg}`;
             <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
               <GraduationCap className="w-5 h-5 text-[var(--accent-primary)]" />
               <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
-                Academics & Educational Levels
+                Education
               </h2>
             </div>
 
