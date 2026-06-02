@@ -8,7 +8,7 @@ import {
   Briefcase, GraduationCap, Code, Layers, BookOpen, Mail, 
   Settings, Printer, ChevronLeft, ChevronRight, Github, Linkedin, ExternalLink, 
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
-  CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw,
+  CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw, RotateCcw,
   FileText, Download, Sparkles
 } from 'lucide-react';
 import { PortfolioData, Project, BlogPost, SubmittedMessage, Publication } from './types';
@@ -163,6 +163,20 @@ export default function App() {
     ]);
   }, [portfolioData.profile.name]);
 
+  const handleRestartConversation = () => {
+    console.log("%c==================== AMIRULLM CONVERSATION RESTARTED ====================", "color: #e11d48; font-weight: bold;");
+    setChatMessages([
+      {
+        id: `msg_greet_${Date.now()}`,
+        role: 'assistant',
+        content: `Hi there! I am AmiruLLM, the Virtual AI Career Representative for ${portfolioData.profile.name || 'Amirul Sadikin'}. Ask me questions regarding my experience in computer vision, research publications, or core technologies!`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+    setChatInput('');
+    setIsChatLoading(false);
+  };
+
   const chatEndRef = React.useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (chatEndRef.current) {
@@ -213,18 +227,38 @@ export default function App() {
         skills: portfolioData.skills?.slice(0, 15).map(s => s.name)
       });
 
+      // Maintain complete conversation continuity by including all historical messages plus current query
+      const fullHistory = [
+        ...chatMessages,
+        newUserMsgObj
+      ];
+
+      const formattedHistory = fullHistory.map(msg => {
+        const uppercaseRole = msg.role === 'assistant' ? 'ASSISTANT' : 'USER';
+        return `${uppercaseRole}: ${msg.content}`;
+      }).join('\n\n');
+
       // Assemble a default CONTEXT using the required role of assistant asking and answering details about the resume JSON
       const contextTemplate = `Act in the role of an assistant asking and answering questions about the following candidate resume JSON:
 ${compactJsonStr}
+
+--- CONVERSATION HISTORY ---
+${formattedHistory}
 
 User Query message: ${userMsg}`;
 
       const finalUrl = `https://amirul.cloud/app/API.php?message=${encodeURIComponent(contextTemplate)}`;
       
       const startTime = Date.now();
-      console.log("[AmiruLLM Chatbot Debug] Sending request payload to the API...");
-      console.log("[AmiruLLM Chatbot Debug] API URL:", finalUrl);
-      console.log("[AmiruLLM Chatbot Debug] Context Payload:", contextTemplate);
+      
+      // Pretty print database & conversation details for high-fidelity developer debugging
+      console.log("%c==================== AMIRULLM OUTGOING CONTEXT DEBUG ====================", "color: #4f46e5; font-weight: bold; font-size: 11px;");
+      console.log("%c[Profile Scope]%c candidate details payload mapped:", "color: #9333ea; font-weight: bold;", "color: inherit;", JSON.parse(compactJsonStr));
+      console.log("%c[Chat Scope]%c conversation history sequence:\n", "color: #9333ea; font-weight: bold;", "color: inherit;", 
+        fullHistory.map(m => `  • [${m.role.toUpperCase()}] ${m.timestamp}: "${m.content}"`).join("\n")
+      );
+      console.log("%c[Network Target]%c target API URL with serialized context:", "color: #9333ea; font-weight: bold;", "color: inherit;", finalUrl);
+      console.log("==========================================================================");
 
       const response = await fetch(finalUrl);
       
@@ -2004,13 +2038,25 @@ User Query message: ${userMsg}`;
                 <p className="text-[9px] text-indigo-200 font-semibold tracking-wide">Interactive Professional Representative</p>
               </div>
             </div>
-            <button
-              onClick={() => setIsChatOpen(false)}
-              className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer"
-              aria-label="Minimize Chat"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleRestartConversation}
+                className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                title="Restart Conversation"
+                aria-label="Restart Conversation"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="text-[10px] font-bold hidden sm:inline">Restart</span>
+              </button>
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer"
+                aria-label="Minimize Chat"
+                title="Minimize"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Messages Stream */}
