@@ -121,6 +121,171 @@ export default function App() {
     return params.get('mode') === 'dev';
   });
 
+  // 9. AmiruLLM Chatbot State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [chatElapsedTime, setChatElapsedTime] = useState(0);
+  const [chatMessages, setChatMessages] = useState<{
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    timestamp: string;
+  }[]>([]);
+
+  // Timer Effect to calculate live duration while chatbot represents a request
+  useEffect(() => {
+    let timerId: any;
+    if (isChatLoading) {
+      setChatElapsedTime(0);
+      timerId = setInterval(() => {
+        setChatElapsedTime(prev => prev + 1);
+      }, 1000);
+    } else {
+      setChatElapsedTime(0);
+    }
+    return () => {
+      if (timerId) {
+        clearInterval(timerId);
+      }
+    };
+  }, [isChatLoading]);
+
+  // Initialize AmiruLLM floating greeting message
+  useEffect(() => {
+    setChatMessages([
+      {
+        id: 'msg_greet',
+        role: 'assistant',
+        content: `Hi there! I am AmiruLLM, the Virtual AI Career Representative for ${portfolioData.profile.name || 'Amirul Sadikin'}. Ask me questions regarding my experience in computer vision, research publications, or core technologies!`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+    ]);
+  }, [portfolioData.profile.name]);
+
+  const chatEndRef = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, isChatLoading, isChatOpen]);
+
+  const handleSendChatMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!chatInput.trim() || isChatLoading) return;
+
+    const userMsg = chatInput.trim();
+    const newUserMsgObj = {
+      id: `user_msg_${Date.now()}`,
+      role: 'user' as const,
+      content: userMsg,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setChatMessages(prev => [...prev, newUserMsgObj]);
+    setChatInput('');
+    setIsChatLoading(true);
+
+    try {
+      // Build optimized contextual resume summary to prevent HTTP 414 URL Too Long
+      const compactJsonStr = JSON.stringify({
+        profile: {
+          name: portfolioData.profile.name,
+          title: portfolioData.profile.title,
+          current_role: portfolioData.profile.currentRole,
+          about: portfolioData.profile.aboutBrief,
+        },
+        education: portfolioData.education.map(edu => ({
+          institution: edu.institution,
+          degree: edu.degree,
+          field: edu.fieldOfStudy
+        })),
+        experience: portfolioData.experience.slice(0, 3).map(exp => ({
+          company: exp.company,
+          role: exp.role,
+          description: exp.description.substring(0, 120) + '...'
+        })),
+        projects: portfolioData.projects.slice(0, 4).map(proj => ({
+          title: proj.title,
+          tags: proj.tags,
+          desc: proj.briefDescription
+        })),
+        skills: portfolioData.skills?.slice(0, 15).map(s => s.name)
+      });
+
+      // Assemble a default CONTEXT using the required role of assistant asking and answering details about the resume JSON
+      const contextTemplate = `Act in the role of an assistant asking and answering questions about the following candidate resume JSON:
+${compactJsonStr}
+
+User Query message: ${userMsg}`;
+
+      const finalUrl = `https://amirul.cloud/app/API.php?message=${encodeURIComponent(contextTemplate)}`;
+      
+      const startTime = Date.now();
+      console.log("[AmiruLLM Chatbot Debug] Sending request payload to the API...");
+      console.log("[AmiruLLM Chatbot Debug] API URL:", finalUrl);
+      console.log("[AmiruLLM Chatbot Debug] Context Payload:", contextTemplate);
+
+      const response = await fetch(finalUrl);
+      
+      const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`[AmiruLLM Chatbot Debug] Received API status ${response.status} in ${duration}s (Expected minimum ~7.0s)`);
+
+      if (!response.ok) {
+        throw new Error(`Status ${response.status}`);
+      }
+
+      // Read reply securely handling both plaintext & JSON structures (including OpenAI choices/completion style)
+      let replyValue = '';
+      const rawText = await response.text();
+      console.log("[AmiruLLM Chatbot Debug] Raw Response Text:", rawText);
+
+      try {
+        const jsonResult = JSON.parse(rawText);
+        console.log("[AmiruLLM Chatbot Debug] Parsed JSON Response Object:", jsonResult);
+        if (jsonResult && jsonResult.choices && jsonResult.choices[0] && jsonResult.choices[0].message && jsonResult.choices[0].message.content) {
+          replyValue = jsonResult.choices[0].message.content;
+        } else if (jsonResult.response) {
+          replyValue = jsonResult.response;
+        } else if (jsonResult.message) {
+          replyValue = jsonResult.message;
+        } else if (jsonResult.text) {
+          replyValue = jsonResult.text;
+        } else if (jsonResult.reply) {
+          replyValue = jsonResult.reply;
+        } else {
+          replyValue = typeof jsonResult === 'string' ? jsonResult : JSON.stringify(jsonResult);
+        }
+      } catch (e) {
+        console.log("[AmiruLLM Chatbot Debug] Response is plaintext/not JSON. Using raw text.");
+        replyValue = rawText;
+      }
+
+      if (!replyValue || !replyValue.trim()) {
+        replyValue = "I represent Amirul Sadikin, and while the AmiruLLM brain returned an empty response, I'm delighted to discuss his computer vision, AI, and systems engineering achievements!";
+      }
+
+      setChatMessages(prev => [...prev, {
+        id: `reply_msg_${Date.now()}`,
+        role: 'assistant',
+        content: replyValue.trim(),
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } catch (error) {
+      console.log('AmiruLLM custom brain connection error:', error);
+      
+      // Local graceful fallback response
+      setChatMessages(prev => [...prev, {
+        id: `reply_msg_err_${Date.now()}`,
+        role: 'assistant',
+        content: `I am currently representing Amirul in offline mode. Based on his verified portfolio, he is a computer vision developer skilled in PyTorch, YOLO, TypeScript, and Laravel. Please feel free to ask another question or download his printable CV!`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
   // Optional: check for loadjson query parameter on load, fallback/default to specified URL
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -272,6 +437,32 @@ export default function App() {
           Floating Navigation Control Utility Hub (No-Print)
           ────────────────────────────────────────────────────────────────── */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 no-print">
+        {/* Toggle AmiruLLM Chat Button */}
+        <button
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer relative group shadow-xl ${
+            isChatOpen 
+              ? 'bg-rose-500 hover:bg-rose-650 ring-4 ring-rose-500/20' 
+              : 'bg-indigo-600 hover:bg-indigo-700 hover:scale-105 ring-4 ring-indigo-500/10'
+          } text-white`}
+          title="Chat with AmiruLLM"
+          aria-label="Toggle AmiruLLM Chatbox"
+        >
+          {isChatOpen ? (
+            <X className="w-5 h-5" />
+          ) : (
+            <MessageSquare className="w-5 h-5" />
+          )}
+          <span className="absolute -left-36 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
+            Chat with AmiruLLM
+          </span>
+          {!isChatOpen && (
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-purple-500 text-[10px] font-bold rounded-full flex items-center justify-center text-white animate-pulse border border-[var(--bg-primary)]">
+              AI
+            </span>
+          )}
+        </button>
+
         <button
           onClick={() => setIsResumeOpen(true)}
           className="w-12 h-12 rounded-full bg-[var(--accent-primary)] hover:scale-105 hover:bg-[var(--accent-hover)] text-white shadow-xl flex items-center justify-center transition-all cursor-pointer relative group-hover"
@@ -1788,6 +1979,143 @@ export default function App() {
           data={portfolioData}
           onClose={() => setIsAiModalOpen(false)}
         />
+      )}
+
+      {/* ──────────────────────────────────────────────────────────────────
+          AMIRULLM INTERACTIVE FLOATING CHAT PANEL (No-Print)
+          ────────────────────────────────────────────────────────────────── */}
+      {isChatOpen && (
+        <div 
+          id="amirullm-chat-dialog" 
+          className="fixed bottom-22 right-6 w-[88vw] sm:w-[380px] md:w-[410px] h-[520px] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 animate-scale-up no-print transition-all duration-300"
+        >
+          {/* Header */}
+          <div className="bg-gradient-to-r from-indigo-650 via-indigo-700 to-purple-800 text-white p-4 flex justify-between items-center shadow-md">
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <div className="w-9 h-9 rounded-full bg-white/10 dark:bg-black/20 flex items-center justify-center border border-white/20 shadow-inner">
+                  <Sparkles className="w-4 h-4 text-purple-300 animate-pulse animate-spin-slow" />
+                </div>
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[var(--bg-secondary)] rounded-full animate-ping"></span>
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[var(--bg-secondary)] rounded-full"></span>
+              </div>
+              <div className="text-left">
+                <h4 className="font-display font-black text-xs uppercase tracking-wider text-white">AmiruLLM</h4>
+                <p className="text-[9px] text-indigo-200 font-semibold tracking-wide">Interactive Professional Representative</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsChatOpen(false)}
+              className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer"
+              aria-label="Minimize Chat"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Messages Stream */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[var(--bg-primary)]/30 scrollbar-thin flex flex-col text-left">
+            {chatMessages.map((msg, index) => (
+              <div
+                key={msg.id || index}
+                className={`flex gap-2.5 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse text-right' : 'mr-auto text-left'}`}
+              >
+                {msg.role === 'assistant' && (
+                  <div className="w-6 h-6 rounded-full bg-indigo-500/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20 shrink-0 flex items-center justify-center text-[9px] font-extrabold select-none">
+                    AI
+                  </div>
+                )}
+                <div>
+                  <div 
+                    className={`p-3 rounded-2xl text-xs leading-relaxed font-sans whitespace-pre-wrap break-words ${
+                      msg.role === 'user'
+                        ? 'bg-indigo-600 text-white rounded-tr-xs text-left'
+                        : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-tl-xs shadow-xs'
+                    }`}
+                  >
+                    {msg.content}
+                  </div>
+                  <span className={`text-[8px] text-[var(--text-secondary)] mt-1 font-mono block px-1 ${msg.role === 'user' && 'text-right'}`}>
+                    {msg.timestamp}
+                  </span>
+                </div>
+              </div>
+            ))}
+            
+            {/* Loading indicators */}
+            {isChatLoading && (
+              <div className="flex gap-2.5 mr-auto max-w-[85%]">
+                <div className="w-6 h-6 rounded-full bg-indigo-505/10 text-[var(--accent-primary)] shrink-0 flex items-center justify-center text-[9px] font-bold">
+                  AI
+                </div>
+                <div>
+                  <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] px-4 py-3.5 rounded-2xl rounded-tl-xs text-xs flex flex-col gap-2 shadow-xs max-w-[270px] sm:max-w-[310px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                      <span className="font-mono text-[9px] text-[var(--text-secondary)] font-bold ml-1 flex items-center gap-1">
+                        Reasoning time: <span className="text-rose-500 text-[10px] animate-pulse">{chatElapsedTime}s</span>
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-[var(--text-secondary)] font-medium leading-relaxed">
+                      {chatElapsedTime < 4 && "⚡ Connecting to custom brain on amirul.cloud..."}
+                      {chatElapsedTime >= 4 && chatElapsedTime < 9 && "🎯 Initializing resume context of Amirul..."}
+                      {chatElapsedTime >= 9 && chatElapsedTime < 15 && "🧠 Analysing computer vision achievements..."}
+                      {chatElapsedTime >= 15 && chatElapsedTime < 22 && "⏳ Deep reasoning with MiMo-v2.5-pro (customary: ~20s)..."}
+                      {chatElapsedTime >= 22 && "🚀 Formulating finalized answer response..."}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Scroll Anchor */}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Quick Starter Suggestions */}
+          <div className="px-3.5 py-2 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/70 overflow-x-auto flex gap-1.5 scrollbar-none whitespace-nowrap">
+            {[
+              'Explain computer vision experience',
+              'What publications do you have?', 
+              'List core tech skills', 
+              'Who is your current employer?'
+            ].map((suggest, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setChatInput(suggest)}
+                className="text-[10px] font-bold bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-full px-2.5 py-1 text-[var(--text-secondary)] hover:text-indigo-600 dark:hover:text-indigo-455 hover:border-indigo-500 transition-colors cursor-pointer select-none"
+              >
+                {suggest}
+              </button>
+            ))}
+          </div>
+
+          {/* Message Input Box Form */}
+          <form
+            onSubmit={handleSendChatMessage}
+            className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] flex gap-2"
+          >
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Query AmiruLLM regarding this CV..."
+              disabled={isChatLoading}
+              className="flex-1 min-w-0 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={!chatInput.trim() || isChatLoading}
+              className="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-all cursor-pointer shadow disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              aria-label="Transmit Message"
+            >
+              <Send className="w-3.5 h-3.5" />
+            </button>
+          </form>
+        </div>
       )}
 
       {/* ──────────────────────────────────────────────────────────────────
