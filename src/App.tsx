@@ -9,7 +9,7 @@ import {
   Settings, Printer, ChevronLeft, ChevronRight, Github, Linkedin, ExternalLink, 
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
   CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw, RotateCcw,
-  FileText, Download, Sparkles, BarChart2, Maximize2
+  FileText, Download, Sparkles, BarChart2, Maximize2, Activity, Terminal, ShieldAlert
 } from 'lucide-react';
 import { PortfolioData, Project, BlogPost, SubmittedMessage, Publication } from './types';
 import { defaultPortfolioData } from './defaultData';
@@ -19,6 +19,78 @@ import { ResumePDF } from './components/ResumePDF';
 import { AiAssistantModal } from './components/AiAssistantModal';
 import { TokenStatsModal } from './components/TokenStatsModal';
 import { sortTimelineItems } from './utils/dateSorter';
+
+interface ParsedLog {
+  ip?: string;
+  timestamp?: string;
+  callType?: string;
+  agent?: string;
+  protocol?: string;
+  model?: string;
+  endpoint?: string;
+  system?: string;
+  maxTokens?: string;
+  httpCode?: string;
+  elapsedSec?: string;
+  inputToks?: string;
+  outputToks?: string;
+  totalToks?: string;
+  messageQuestion?: string;
+  conversationHistory?: string;
+  responseOutput?: string;
+  raw: string;
+}
+
+function parseLogFile(raw: string): ParsedLog {
+  const result: ParsedLog = { raw };
+  
+  const fields: { key: keyof ParsedLog; pattern: RegExp }[] = [
+    { key: 'ip', pattern: /Source IP\s*:\s*(.*)/i },
+    { key: 'timestamp', pattern: /Timestamp\s*:\s*(.*)/i },
+    { key: 'callType', pattern: /Call Type\s*:\s*(.*)/i },
+    { key: 'agent', pattern: /Agent\s*:\s*(.*)/i },
+    { key: 'protocol', pattern: /Protocol\s*:\s*(.*)/i },
+    { key: 'model', pattern: /Model\s*:\s*(.*)/i },
+    { key: 'endpoint', pattern: /Endpoint\s*:\s*(.*)/i },
+    { key: 'system', pattern: /System\s*:\s*(.*)/i },
+    { key: 'maxTokens', pattern: /Max Tokens\s*:\s*(.*)/i },
+    { key: 'httpCode', pattern: /HTTP Code\s*:\s*(.*)/i },
+    { key: 'elapsedSec', pattern: /Elapsed\s*:\s*(.*)/i },
+    { key: 'inputToks', pattern: /Input Toks\s*:\s*(.*)/i },
+    { key: 'outputToks', pattern: /Output Toks\s*:\s*(.*)/i },
+    { key: 'totalToks', pattern: /Total Toks\s*:\s*(.*)/i },
+  ];
+
+  fields.forEach(({ key, pattern }) => {
+    const match = raw.match(pattern);
+    if (match) {
+      result[key] = match[1].trim();
+    }
+  });
+
+  // Extract sections
+  const msgIndex = raw.indexOf('--- Message / Question ---');
+  const convIndex = raw.indexOf('--- CONVERSATION HISTORY ---');
+  const responseHeaderIndex = raw.indexOf('--- Response Output ---');
+  const endLogIndex = raw.indexOf('END OF LOG');
+
+  if (msgIndex !== -1) {
+    const end = convIndex !== -1 ? convIndex : (raw.indexOf('RESPONSE') !== -1 ? raw.indexOf('RESPONSE') : raw.length);
+    result.messageQuestion = raw.substring(msgIndex + '--- Message / Question ---'.length, end).trim();
+  }
+
+  if (convIndex !== -1) {
+    const end = raw.indexOf('RESPONSE') !== -1 ? raw.indexOf('RESPONSE') : raw.length;
+    result.conversationHistory = raw.substring(convIndex + '--- CONVERSATION HISTORY ---'.length, end).trim();
+  }
+
+  if (responseHeaderIndex !== -1) {
+    const end = endLogIndex !== -1 ? endLogIndex : raw.length;
+    result.responseOutput = raw.substring(responseHeaderIndex + '--- Response Output ---'.length, end).trim();
+  }
+
+  return result;
+}
 
 export default function App() {
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
@@ -162,6 +234,65 @@ export default function App() {
     content: string;
     timestamp: string;
   }[]>([]);
+
+  // 10. AmiruLLM Fullscreen Advanced Features Tab & API States
+  const [fullscreenLeftTab, setFullscreenLeftTab] = useState<'budget' | 'logs' | 'quota'>('budget');
+  const [selectedLogFilename, setSelectedLogFilename] = useState<string | null>(null);
+  const [activeLogSectionTab, setActiveLogSectionTab] = useState<'overview' | 'dialogue' | 'raw'>('overview');
+  const [copiedLogStatus, setCopiedLogStatus] = useState<boolean>(false);
+  const [apiLogsData, setApiLogsData] = useState<any>(null);
+  const [apiLogsLoading, setApiLogsLoading] = useState<boolean>(false);
+  const [apiLogsError, setApiLogsError] = useState<string>('');
+
+  const [apiQuotaData, setApiQuotaData] = useState<any>(null);
+  const [apiQuotaLoading, setApiQuotaLoading] = useState<boolean>(false);
+  const [apiQuotaError, setApiQuotaError] = useState<string>('');
+
+  const fetchApiLogs = async () => {
+    setApiLogsLoading(true);
+    setApiLogsError('');
+    try {
+      const response = await fetch('https://amirul.cloud/app/API.php?info=mylogs');
+      if (!response.ok) {
+        throw new Error(`HTTP Error ${response.status}`);
+      }
+      const data = await response.json();
+      setApiLogsData(data);
+    } catch (e: any) {
+      console.error("Error fetching logs:", e);
+      setApiLogsError(e.message || 'Failed to retrieve logs from server.');
+    } finally {
+      setApiLogsLoading(false);
+    }
+  };
+
+  const fetchApiQuota = async () => {
+    setApiQuotaLoading(true);
+    setApiQuotaError('');
+    try {
+      const response = await fetch('https://amirul.cloud/app/API.php?info=myquota');
+      if (!response.ok) {
+        throw new Error(`HTTP Error ${response.status}`);
+      }
+      const data = await response.json();
+      setApiQuotaData(data);
+    } catch (e: any) {
+      console.error("Error fetching quota:", e);
+      setApiQuotaError(e.message || 'Failed to retrieve quota from server.');
+    } finally {
+      setApiQuotaLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isFullscreenChat) {
+      if (fullscreenLeftTab === 'logs') {
+        fetchApiLogs();
+      } else if (fullscreenLeftTab === 'quota') {
+        fetchApiQuota();
+      }
+    }
+  }, [fullscreenLeftTab, isFullscreenChat]);
 
   // Timer Effect to calculate live duration while chatbot represents a request
   useEffect(() => {
@@ -2753,13 +2884,493 @@ User Query message: ${userMsg}`;
 
           {/* Split Panel Body */}
           <div className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden h-full min-h-0 bg-slate-950">
-            {/* Left Pane: Stats Component */}
-            <div className="flex-1 h-full min-h-0 relative bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-lg">
-              <TokenStatsModal 
-                onClose={() => {}} 
-                isInline={true} 
-                key={`stats-${chatMessages.length}`}
-              />
+            {/* Left Pane: Stats Component & Telemetry tabs */}
+            <div className="flex-1 h-full min-h-0 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-lg flex flex-col">
+              {/* Tab Selector Bar */}
+              <div className="bg-slate-900/60 p-2.5 border-b border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2 shrink-0 select-none">
+                <div className="flex bg-slate-950/60 p-1 rounded-xl border border-[var(--border-color)] text-xs font-sans">
+                  <button
+                    onClick={() => setFullscreenLeftTab('budget')}
+                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold uppercase tracking-wider text-[9px] transition-all cursor-pointer ${
+                      fullscreenLeftTab === 'budget'
+                        ? 'bg-indigo-600 text-white shadow-md font-extrabold'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <BarChart2 className="w-3.5 h-3.5" />
+                    <span>Eco-Budget</span>
+                  </button>
+                  <button
+                    onClick={() => setFullscreenLeftTab('logs')}
+                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold uppercase tracking-wider text-[9px] transition-all cursor-pointer ${
+                      fullscreenLeftTab === 'logs'
+                        ? 'bg-indigo-600 text-white shadow-md font-extrabold'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Terminal className="w-3.5 h-3.5" />
+                    <span>System Logs</span>
+                  </button>
+                  <button
+                    onClick={() => setFullscreenLeftTab('quota')}
+                    className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold uppercase tracking-wider text-[9px] transition-all cursor-pointer ${
+                      fullscreenLeftTab === 'quota'
+                        ? 'bg-indigo-600 text-white shadow-md font-extrabold'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Activity className="w-3.5 h-3.5" />
+                    <span>Telemetry Quota</span>
+                  </button>
+                </div>
+
+                {/* Refresh/Action status */}
+                <div className="flex items-center gap-2">
+                  {fullscreenLeftTab === 'logs' && (
+                    <button
+                      onClick={fetchApiLogs}
+                      disabled={apiLogsLoading}
+                      className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer disabled:opacity-40"
+                      title="Sync system logs"
+                      type="button"
+                    >
+                      <RotateCw className={`w-3.5 h-3.5 ${apiLogsLoading ? 'animate-spin text-indigo-400' : ''}`} />
+                    </button>
+                  )}
+                  {fullscreenLeftTab === 'quota' && (
+                    <button
+                      onClick={fetchApiQuota}
+                      disabled={apiQuotaLoading}
+                      className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer disabled:opacity-40"
+                      title="Sync telemetry quota"
+                      type="button"
+                    >
+                      <RotateCw className={`w-3.5 h-3.5 ${apiQuotaLoading ? 'animate-spin text-indigo-400' : ''}`} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Tab Contents Pane */}
+              <div className="flex-1 min-h-0 overflow-hidden relative">
+                {fullscreenLeftTab === 'budget' && (
+                  <TokenStatsModal 
+                    onClose={() => {}} 
+                    isInline={true} 
+                    key={`stats-${chatMessages.length}`}
+                  />
+                )}
+
+                {fullscreenLeftTab === 'logs' && (
+                  <div className="h-full flex flex-col bg-slate-950 text-slate-300 overflow-hidden">
+                    {apiLogsLoading ? (
+                      <div className="flex-1 flex flex-col items-center justify-center space-y-3 font-sans">
+                        <RotateCw className="w-8 h-8 animate-spin text-indigo-500" />
+                        <span className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Querying server log folders...</span>
+                      </div>
+                    ) : apiLogsError ? (
+                      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3 font-sans">
+                        <ShieldAlert className="w-10 h-10 text-rose-500 animate-pulse" />
+                        <div>
+                          <p className="text-xs font-bold text-slate-200 uppercase tracking-widest font-display">Server Log Link Error</p>
+                          <p className="text-[10px] text-slate-500 mt-1 max-w-sm">{apiLogsError}</p>
+                        </div>
+                        <button
+                          onClick={fetchApiLogs}
+                          className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer"
+                          type="button"
+                        >
+                          Retry Network Request
+                        </button>
+                      </div>
+                    ) : selectedLogFilename ? (() => {
+                        const rawContent = apiLogsData?.logs?.[selectedLogFilename] || '';
+                        const parsed = parseLogFile(rawContent);
+                        const isSuccess = parsed.httpCode === '200';
+
+                        return (
+                          <div className="flex-1 flex flex-col min-h-0 bg-slate-950 text-left">
+                            {/* Back button and title */}
+                            <div className="p-3 bg-slate-900 border-b border-white/5 flex items-center justify-between gap-2 select-none shrink-0 font-sans">
+                              <button
+                                onClick={() => setSelectedLogFilename(null)}
+                                className="text-xs text-indigo-400 hover:text-indigo-300 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                                <span>All Logs</span>
+                              </button>
+                              <span className="text-[10px] font-mono font-bold text-slate-450 truncate max-w-[180px] sm:max-w-none">
+                                {selectedLogFilename}
+                              </span>
+                              <div className="flex items-center gap-1">
+                                <span className={`inline-flex px-1.5 py-0.5 rounded text-[8px] font-mono font-bold ${
+                                  isSuccess ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                }`}>
+                                  {parsed.httpCode || 'UNKNOWN'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Token, Latency Summary Banner */}
+                            <div className="grid grid-cols-3 gap-1 bg-slate-900/40 p-2.5 border-b border-white/5 shrink-0 text-center select-none font-sans">
+                              <div className="border-r border-white/5">
+                                <span className="text-[8px] text-slate-500 uppercase block font-bold">Input Tokens</span>
+                                <span className="text-xs font-mono font-black text-slate-300">{parsed.inputToks || '0'}</span>
+                              </div>
+                              <div className="border-r border-white/5">
+                                <span className="text-[8px] text-slate-500 uppercase block font-bold">Output Tokens</span>
+                                <span className="text-xs font-mono font-black text-indigo-400">{parsed.outputToks || '0'}</span>
+                              </div>
+                              <div>
+                                <span className="text-[8px] text-slate-500 uppercase block font-bold">Response Elapsed</span>
+                                <span className="text-xs font-mono font-black text-emerald-450">{parsed.elapsedSec || '0.0s'}</span>
+                              </div>
+                            </div>
+
+                            {/* Sub tab selectors for Log Explorer details */}
+                            <div className="flex bg-slate-900/60 p-1 border-b border-white/5 text-[10px] font-sans select-none shrink-0">
+                              <button
+                                onClick={() => setActiveLogSectionTab('overview')}
+                                className={`flex-1 py-1.5 rounded-lg text-center font-bold uppercase tracking-wider text-[8px] sm:text-[9px] transition-all cursor-pointer ${
+                                  activeLogSectionTab === 'overview' ? 'bg-indigo-650 text-white font-extrabold' : 'text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                Overview
+                              </button>
+                              <button
+                                onClick={() => setActiveLogSectionTab('dialogue')}
+                                className={`flex-1 py-1.5 rounded-lg text-center font-bold uppercase tracking-wider text-[8px] sm:text-[9px] transition-all cursor-pointer ${
+                                  activeLogSectionTab === 'dialogue' ? 'bg-indigo-650 text-white font-extrabold' : 'text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                Dialogue Trace
+                              </button>
+                              <button
+                                onClick={() => setActiveLogSectionTab('raw')}
+                                className={`flex-1 py-1.5 rounded-lg text-center font-bold uppercase tracking-wider text-[8px] sm:text-[9px] transition-all cursor-pointer ${
+                                  activeLogSectionTab === 'raw' ? 'bg-indigo-650 text-white font-extrabold' : 'text-slate-400 hover:text-slate-200'
+                                }`}
+                              >
+                                Raw Content
+                              </button>
+                            </div>
+
+                            {/* Details Pane body */}
+                            <div className="flex-1 p-4 overflow-y-auto scrollbar-thin">
+                              {activeLogSectionTab === 'overview' && (
+                                <div className="space-y-4 animate-fade-in text-[11px] font-sans">
+                                  <div className="bg-slate-900/40 border border-white/5 rounded-xl p-3.5 space-y-2.5">
+                                    <h4 className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Gateway Telemetry Headers</h4>
+                                    <div className="grid grid-cols-2 gap-3 font-mono text-[10px]">
+                                      <div>
+                                        <span className="text-[8px] text-slate-500 uppercase block font-sans font-bold">Client IP</span>
+                                        <span className="text-slate-300 break-all">{parsed.ip || 'No IP'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[8px] text-slate-500 uppercase block font-sans font-bold">Log Timestamp</span>
+                                        <span className="text-slate-300">{parsed.timestamp || 'No timestamp'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[8px] text-slate-500 uppercase block font-sans font-bold">Call category</span>
+                                        <span className="text-emerald-450 uppercase font-bold">{parsed.callType || 'N/A'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[8px] text-slate-500 uppercase block font-sans font-bold">Target routing agent</span>
+                                        <span className="text-slate-300">{parsed.agent || '-'}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="bg-slate-900/40 border border-white/5 rounded-xl p-3.5 space-y-2.5">
+                                    <h4 className="text-[10px] uppercase font-bold text-indigo-400 tracking-wider">Model Configuration Parameters</h4>
+                                    <div className="grid grid-cols-2 gap-3 font-mono text-[10px]">
+                                      <div>
+                                        <span className="text-[8px] text-slate-500 uppercase block font-sans font-bold">Inference Model</span>
+                                        <span className="text-indigo-300 font-bold">{parsed.model || 'mimo-v2.5'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[8px] text-slate-500 uppercase block font-sans font-bold">API Protocol Type</span>
+                                        <span className="text-slate-300 uppercase font-bold">{parsed.protocol || 'Unknown'}</span>
+                                      </div>
+                                      <div className="col-span-2">
+                                        <span className="text-[8px] text-slate-500 uppercase block font-sans font-bold">Access Endpoint URL</span>
+                                        <span className="text-slate-400 break-all leading-normal text-[9px] block bg-slate-950 p-2 rounded border border-white/5 mt-1">{parsed.endpoint || 'N/A'}</span>
+                                      </div>
+                                      <div>
+                                        <span className="text-[8px] text-slate-500 uppercase block font-sans font-bold">Budget Quota Limit</span>
+                                        <span className="text-slate-300">{parsed.maxTokens || '1024'} max tokens</span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {parsed.system && (
+                                    <div className="bg-slate-900/40 border border-white/5 rounded-xl p-3.5 space-y-1.5">
+                                      <span className="text-[8px] text-slate-500 uppercase block font-bold">System Directive Overrides</span>
+                                      <div className="font-mono text-[10px] text-slate-450 bg-slate-950 p-2 border border-white/5 rounded max-h-[100px] overflow-y-auto leading-normal whitespace-pre-wrap">
+                                        {parsed.system}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {activeLogSectionTab === 'dialogue' && (
+                                <div className="space-y-4 animate-fade-in text-xs font-sans">
+                                  {/* Prompt Input Block */}
+                                  {parsed.messageQuestion && (
+                                    <div className="space-y-1.5 text-left">
+                                      <span className="text-[9px] uppercase font-bold text-indigo-400 font-mono tracking-widest pl-1 block">Inquiry Prompt payload:</span>
+                                      <div className="bg-slate-900 border border-white/5 p-3 rounded-2xl rounded-tl-none text-slate-200 whitespace-pre-wrap break-words leading-relaxed max-h-[150px] overflow-y-auto scrollbar-thin text-xs">
+                                        {parsed.messageQuestion}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Conversation string history */}
+                                  {parsed.conversationHistory && (
+                                    <div className="space-y-2 text-left">
+                                      <span className="text-[9px] uppercase font-bold text-indigo-400 font-mono tracking-widest pl-1 block">Conversation history stream:</span>
+                                      <div className="bg-slate-900 border border-white/5 p-3 rounded-xl max-h-[220px] overflow-y-auto scrollbar-thin text-[10px] font-mono leading-relaxed text-slate-400 space-y-3 select-text whitespace-pre-wrap">
+                                        {parsed.conversationHistory}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Response Block representation */}
+                                  {parsed.responseOutput && (
+                                    <div className="space-y-1.5 text-left">
+                                      <span className="text-[9px] uppercase font-bold text-indigo-400 font-mono tracking-widest pl-1 block text-left">Model returned output:</span>
+                                      <div className="bg-slate-900 border border-white/5 p-3.5 rounded-2xl rounded-tr-none text-slate-205 leading-relaxed max-h-[240px] overflow-y-auto scrollbar-thin text-xs text-left bg-gradient-to-br from-indigo-950/20 to-purple-950/10">
+                                        {parsed.responseOutput}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {activeLogSectionTab === 'raw' && (
+                                <div className="space-y-3 animate-fade-in h-full flex flex-col min-h-0 text-left">
+                                  <div className="flex justify-between items-center select-none font-sans text-left">
+                                    <span className="text-[9px] uppercase tracking-wide text-slate-500 font-bold">Plain Text Buffer ({rawContent.length} chars)</span>
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(rawContent);
+                                        setCopiedLogStatus(true);
+                                        setTimeout(() => setCopiedLogStatus(false), 2000);
+                                      }}
+                                      className="px-3 py-1 bg-slate-900 hover:bg-slate-800 active:scale-95 text-[9px] uppercase font-bold text-slate-300 rounded border border-white/5 cursor-pointer select-none transition-all flex items-center gap-1"
+                                      type="button"
+                                    >
+                                      {copiedLogStatus ? "Copied!" : "Copy Txt"}
+                                    </button>
+                                  </div>
+                                  <div className="flex-1 min-h-[250px] bg-slate-950 p-3 rounded-xl border border-white/5 overflow-y-auto font-mono text-[9px] text-slate-450 leading-relaxed whitespace-pre select-text text-left scrollbar-thin">
+                                    {rawContent}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })() : (
+                      <div className="flex-1 flex flex-col min-h-0 text-left">
+                        {/* Summary panel */}
+                        <div className="p-4 border-b border-white/5 shrink-0 select-none">
+                          <div className="grid grid-cols-2 gap-2 bg-slate-900/60 p-3.5 rounded-2xl border border-white/5 font-sans">
+                            <div>
+                              <span className="text-[9px] text-slate-500 uppercase block font-bold">Terminal IP Address</span>
+                              <span className="text-xs font-mono font-bold text-slate-200">{apiLogsData?.ip || 'Detecting...'}</span>
+                            </div>
+                            <div>
+                              <span className="text-[9px] text-slate-550 uppercase block font-bold">Diagnostic Log Records</span>
+                              <span className="text-xs font-mono font-bold text-slate-200">{apiLogsData?.total_files || 0} active files</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Interactive File Accordion List */}
+                        {!apiLogsData?.logs || Object.keys(apiLogsData.logs).length === 0 ? (
+                          <div className="flex-1 flex flex-col items-center justify-center text-slate-500 space-y-2 p-6 text-center font-sans">
+                            <Terminal className="w-10 h-10 text-slate-650 animate-pulse" />
+                            <div>
+                              <span className="text-xs font-bold text-slate-300 block">No Server Logs Recorded</span>
+                              <span className="text-[10px] text-slate-500 mt-1 max-w-xs block leading-relaxed">No telemetry dialog triggers found or compiled under your client IP. Use chatbot prompts to generate event logs.</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex-1 min-h-0 flex flex-col p-4 pt-2 gap-3 overflow-hidden select-none">
+                            <span className="text-[10px] text-indigo-400 font-extrabold uppercase tracking-wider block font-sans text-left">Available Telemetry Logs:</span>
+                            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-thin">
+                              {Object.entries(apiLogsData.logs).map(([filename, rawContent]: [string, any]) => {
+                                const parsed = parseLogFile(rawContent);
+                                const isSuccess = parsed.httpCode === '200';
+                                const timeLabel = parsed.timestamp 
+                                  ? parsed.timestamp.split(' ').pop() 
+                                  : filename.split('_').slice(2).join('_').replace('.log','').replaceAll('-',':');
+
+                                return (
+                                  <button
+                                    key={filename}
+                                    onClick={() => {
+                                      setSelectedLogFilename(filename);
+                                      setActiveLogSectionTab('overview');
+                                    }}
+                                    className="w-full text-left bg-slate-900 hover:bg-slate-900/85 border border-white/5 hover:border-indigo-500/30 rounded-xl overflow-hidden flex items-stretch p-3 gap-3 transition-all cursor-pointer group text-slate-350"
+                                    type="button"
+                                  >
+                                    <div className={`p-2 rounded-lg flex items-center justify-center border shrink-0 ${
+                                      isSuccess ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                    }`}>
+                                      <Terminal className="w-4 h-4" />
+                                    </div>
+
+                                    <div className="flex-1 min-w-0 pr-1 select-none font-sans">
+                                      <div className="flex items-center justify-between gap-2.5">
+                                        <span className="text-[11px] font-bold text-slate-100 truncate group-hover:text-indigo-300 transition-colors">
+                                          {filename.length > 24 ? `${filename.slice(0, 24)}...` : filename}
+                                        </span>
+                                        <span className="text-[9px] font-mono font-bold text-slate-500 shrink-0">
+                                          {timeLabel || 'API LOG'}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-wrap items-center mt-1.5 gap-2 text-[9px] font-mono text-slate-500">
+                                        <span className="bg-slate-950 px-1.5 py-0.5 rounded font-bold border border-white/5 text-slate-400">{parsed.model || 'mimo-v2.5'}</span>
+                                        <span>•</span>
+                                        <span className="text-indigo-400/90 font-bold">{parsed.totalToks || '0'} tokens</span>
+                                        <span>•</span>
+                                        <span className="text-emerald-500/90 font-semibold">{parsed.elapsedSec || '0.0s'}</span>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center shrink-0 pr-1 text-slate-600 group-hover:text-slate-300 transition-colors">
+                                      <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {fullscreenLeftTab === 'quota' && (
+                  <div className="h-full flex flex-col bg-slate-950 p-4 sm:p-5 overflow-y-auto select-text">
+                    {apiQuotaLoading ? (
+                      <div className="h-full flex flex-col items-center justify-center space-y-3">
+                        <RotateCw className="w-8 h-8 animate-spin text-indigo-500" />
+                        <span className="text-[10px] text-slate-500 font-mono uppercase tracking-widest font-bold">Interrogating API quota endpoint...</span>
+                      </div>
+                    ) : apiQuotaError ? (
+                      <div className="h-full flex flex-col items-center justify-center p-6 text-center space-y-3 font-sans">
+                        <ShieldAlert className="w-10 h-10 text-rose-500 animate-pulse" />
+                        <div>
+                          <p className="text-xs font-bold text-slate-200 uppercase tracking-widest font-display">Quota Query Failure</p>
+                          <p className="text-[10px] text-slate-500 mt-1 max-w-sm">{apiQuotaError}</p>
+                        </div>
+                        <button
+                          onClick={fetchApiQuota}
+                          className="px-4 py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-[10px] uppercase font-bold tracking-wider transition-all cursor-pointer"
+                          type="button"
+                        >
+                          Retry Telemetry Sync
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-5 animate-fade-in font-sans text-left">
+                        {/* Core Quota Meter Card */}
+                        {(() => {
+                          const limit = apiQuotaData?.quota?.limit_24h || 50000;
+                          const used = apiQuotaData?.quota?.used_24h || 0;
+                          const remaining = apiQuotaData?.quota?.remaining_24h || limit;
+                          const calls = apiQuotaData?.quota?.calls_24h || 0;
+                          const allowed = apiQuotaData?.quota?.allowed !== false;
+                          const usagePercent = Math.min(100, Math.floor((used / limit) * 100));
+
+                          return (
+                            <>
+                              <div className="bg-slate-900 border border-white/5 p-4 rounded-2xl relative overflow-hidden group shadow-lg text-left">
+                                <div className="absolute top-0 right-0 p-3">
+                                  <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[8px] font-extrabold uppercase tracking-widest font-mono ${
+                                    allowed ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-450'
+                                  }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${allowed ? 'bg-emerald-500 animate-pulse' : 'bg-rose-550'}`}></span>
+                                    {allowed ? 'Active / Allowed' : 'Denied / Rate Limited'}
+                                  </span>
+                                </div>
+
+                                <span className="text-[10px] font-mono font-extrabold uppercase tracking-wide text-indigo-400 block">24H API Token Budget Balance</span>
+                                <h3 className="text-2xl font-black text-slate-100 font-display mt-1.5">
+                                  {remaining.toLocaleString()} <span className="text-slate-500 text-xs font-medium font-sans">tokens remaining</span>
+                                </h3>
+
+                                {/* Visual Progress gauge bar */}
+                                <div className="mt-4 space-y-2">
+                                  <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-white/5">
+                                    <div 
+                                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500"
+                                      style={{ width: `${usagePercent}%` }}
+                                    ></div>
+                                  </div>
+                                  <div className="flex justify-between items-baseline text-[10px] text-slate-400 font-mono">
+                                    <span>Used: {used.toLocaleString()} ({usagePercent}%)</span>
+                                    <span>Limit: {limit.toLocaleString()} tokens</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Stat Card Grid */}
+                              <div className="grid grid-cols-2 gap-3 text-left">
+                                <div className="bg-slate-900/60 border border-white/5 p-3.5 rounded-xl">
+                                  <span className="text-[9px] text-slate-500 font-bold uppercase block">API Calls (24H)</span>
+                                  <span className="text-base font-black text-slate-200 mt-1 block">{calls} request(s)</span>
+                                </div>
+                                <div className="bg-slate-900/60 border border-white/5 p-3.5 rounded-xl">
+                                  <span className="text-[9px] text-slate-500 font-bold uppercase block">Budget Renewal Reset</span>
+                                  <span className="text-[10px] font-mono text-slate-400 mt-1 block leading-tight truncate" title={apiQuotaData?.quota?.reset_at || 'Never'}>
+                                    {apiQuotaData?.quota?.reset_at ? new Date(apiQuotaData.quota.reset_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Continuous'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* All time accumulator card */}
+                              {apiQuotaData?.all_time && (
+                                <div className="bg-gradient-to-r from-purple-950/20 to-indigo-950/20 border border-indigo-900/20 p-4 rounded-xl text-left">
+                                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-wide text-purple-400 block mb-2">All-Time Cumulative Telemetry Logs</span>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <span className="text-[9px] text-slate-450 uppercase">Total API Hits</span>
+                                      <span className="text-sm font-black text-slate-200 block mt-0.5">{apiQuotaData.all_time.total_calls || 0}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-[9px] text-slate-450 uppercase">Total Tokens Exchanged</span>
+                                      <span className="text-sm font-black text-slate-200 block mt-0.5 font-mono">{apiQuotaData.all_time.total_tokens?.toLocaleString() || 0}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Footer metadata details */}
+                              <div className="bg-slate-900/30 border border-white/5 p-3.5 rounded-xl flex items-center justify-between text-[10px] text-slate-550 font-mono text-left">
+                                <div>
+                                  <span className="block text-[8px] uppercase text-slate-600 font-bold font-sans">Client System IP</span>
+                                  <span>{apiQuotaData?.ip || 'Unknown'}</span>
+                                </div>
+                                <div className="text-right">
+                                  <span className="block text-[8px] uppercase text-slate-600 font-bold font-sans">Sync Reference Time</span>
+                                  <span>{apiQuotaData?.timestamp ? new Date(apiQuotaData.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Live'}</span>
+                                </div>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Right Pane: Full-Height Chat Component */}
