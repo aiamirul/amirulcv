@@ -9,7 +9,7 @@ import {
   Settings, Printer, ChevronLeft, ChevronRight, Github, Linkedin, ExternalLink, 
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
   CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw, RotateCcw,
-  FileText, Download, Sparkles, BarChart2
+  FileText, Download, Sparkles, BarChart2, Maximize2
 } from 'lucide-react';
 import { PortfolioData, Project, BlogPost, SubmittedMessage, Publication } from './types';
 import { defaultPortfolioData } from './defaultData';
@@ -92,6 +92,7 @@ export default function App() {
   const [projectCarouselIndex, setProjectCarouselIndex] = useState(0);
   const [isProjectDescExpanded, setIsProjectDescExpanded] = useState(false);
   const [expandedPubs, setExpandedPubs] = useState<Record<string, boolean>>({});
+  const [fullScreenImageUrl, setFullScreenImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     setProjectCarouselIndex(0);
@@ -102,17 +103,21 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setSelectedProject(null);
-        setSelectedBlog(null);
-        setIsAiModalOpen(false);
-        setIsStatsOpen(false);
-        setIsResumeOpen(false);
-        setIsCmsOpen(false);
+        if (fullScreenImageUrl) {
+          setFullScreenImageUrl(null);
+        } else {
+          setSelectedProject(null);
+          setSelectedBlog(null);
+          setIsAiModalOpen(false);
+          setIsStatsOpen(false);
+          setIsResumeOpen(false);
+          setIsCmsOpen(false);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [fullScreenImageUrl]);
 
   const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
   const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
@@ -1851,12 +1856,23 @@ User Query message: ${userMsg}`;
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <img 
-                        src={currentImgUrl} 
-                        alt={`${selectedProject.title} slide ${projectCarouselIndex + 1}`} 
-                        className="w-full h-full object-cover transition-all duration-350"
-                        referrerPolicy="no-referrer"
-                      />
+                      <div className="relative w-full h-full group/zoom-preview overflow-hidden">
+                        <img 
+                          src={currentImgUrl} 
+                          alt={`${selectedProject.title} slide ${projectCarouselIndex + 1}`} 
+                          className="w-full h-full object-cover transition-all duration-350 cursor-zoom-in group-hover/zoom-preview:scale-[1.03]"
+                          referrerPolicy="no-referrer"
+                          onClick={() => setFullScreenImageUrl(currentImgUrl)}
+                        />
+                        <div 
+                          onClick={() => setFullScreenImageUrl(currentImgUrl)}
+                          className="absolute inset-0 bg-black/35 opacity-0 group-hover/zoom-preview:opacity-100 transition-opacity flex flex-col justify-end p-4 sm:p-6 cursor-zoom-in pointer-events-auto"
+                        >
+                          <span className="text-[10px] font-mono tracking-wider font-extrabold uppercase bg-[var(--accent-primary)] text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 w-fit shadow-lg animate-pulse select-none">
+                            <Maximize2 className="w-3.5 h-3.5" /> Click to Expand Full Screen
+                          </span>
+                        </div>
+                      </div>
                     )}
 
                     {/* Close action button for mobile only inside left media banner */}
@@ -2106,13 +2122,22 @@ User Query message: ${userMsg}`;
 
               {/* Cover cover illustration */}
               {selectedBlog.coverImage && (
-                <div className="w-full aspect-video rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-sm bg-[var(--bg-tertiary)]">
+                <div className="w-full aspect-video rounded-2xl overflow-hidden border border-[var(--border-color)] shadow-sm bg-[var(--bg-tertiary)] group/blog-zoom relative">
                   <img 
                     src={selectedBlog.coverImage} 
                     alt={selectedBlog.title} 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover cursor-zoom-in transition-all duration-350 group-hover/blog-zoom:scale-[1.02]"
                     referrerPolicy="no-referrer"
+                    onClick={() => setFullScreenImageUrl(selectedBlog.coverImage)}
                   />
+                  <div 
+                    onClick={() => setFullScreenImageUrl(selectedBlog.coverImage)}
+                    className="absolute inset-0 bg-black/35 opacity-0 group-hover/blog-zoom:opacity-100 transition-opacity flex flex-col justify-end p-4 sm:p-6 cursor-zoom-in pointer-events-auto"
+                  >
+                    <span className="text-[10px] font-mono tracking-wider font-extrabold uppercase bg-[var(--accent-primary)] text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 w-fit shadow-lg animate-pulse select-none">
+                      <Maximize2 className="w-3.5 h-3.5" /> Direct Full Screen View
+                    </span>
+                  </div>
                 </div>
               )}
 
@@ -2621,6 +2646,48 @@ User Query message: ${userMsg}`;
       {/* AmiruLLM Eco Metrics & Token Usage Analytics Dialog Overlay */}
       {isStatsOpen && (
         <TokenStatsModal onClose={() => setIsStatsOpen(false)} />
+      )}
+
+      {/* FULLSCREEN IMAGE LIGHTBOX OVERLAY */}
+      {fullScreenImageUrl && (
+        <div 
+          onClick={() => setFullScreenImageUrl(null)}
+          className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-8 no-print select-none cursor-zoom-out animate-fade-in"
+        >
+          {/* Close button top right */}
+          <button 
+            onClick={() => setFullScreenImageUrl(null)}
+            className="absolute top-6 right-6 z-[110] w-12 h-12 bg-white/10 hover:bg-white/20 hover:scale-105 active:scale-95 text-white rounded-full flex items-center justify-center cursor-pointer transition-all border border-white/20 shadow-2xl focus:outline-none"
+            title="Close Fullscreen (ESC)"
+            aria-label="Close fullscreen"
+          >
+            <X className="w-5 h-5" />
+          </button>
+
+          {/* Centered Image Frame */}
+          <div className="relative max-w-full max-h-[85vh] flex justify-center items-center shadow-2xl rounded-xl overflow-hidden select-none">
+            <img 
+              src={fullScreenImageUrl} 
+              alt="Project Fullscreen Showcase" 
+              className="max-w-full max-h-[80vh] object-contain rounded-xl select-none animate-scale-up border border-white/10"
+              referrerPolicy="no-referrer"
+              onClick={(e) => {
+                e.stopPropagation();
+                setFullScreenImageUrl(null);
+              }}
+            />
+          </div>
+
+          {/* Bottom Context Info Indicator Bar */}
+          <div className="mt-6 text-center text-white/60 space-y-1.5">
+            <p className="text-xs font-mono tracking-widest font-bold uppercase text-[var(--accent-primary)] select-none">
+              In-Depth Analytical Showcase
+            </p>
+            <p className="text-[10px] text-white/45 tracking-wider uppercase font-medium select-none">
+              Click anywhere or press <kbd className="bg-white/15 text-white/90 px-1.5 py-0.5 rounded font-mono text-[9px] mx-1">ESC</kbd> to return
+            </p>
+          </div>
+        </div>
       )}
 
     </div>
