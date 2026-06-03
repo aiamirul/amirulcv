@@ -249,7 +249,7 @@ ${formattedHistory}
 
 User Query message: ${userMsg}`;
 
-      const finalUrl = `https://amirul.cloud/app/API.php?message=${encodeURIComponent(contextTemplate)}`;
+      const finalUrl = 'https://amirul.cloud/app/API.php';
       
       const startTime = Date.now();
       
@@ -259,10 +259,20 @@ User Query message: ${userMsg}`;
       console.log("%c[Chat Scope]%c conversation history sequence:\n", "color: #9333ea; font-weight: bold;", "color: inherit;", 
         fullHistory.map(m => `  • [${m.role.toUpperCase()}] ${m.timestamp}: "${m.content}"`).join("\n")
       );
-      console.log("%c[Network Target]%c target API URL with serialized context:", "color: #9333ea; font-weight: bold;", "color: inherit;", finalUrl);
+      console.log("%c[Network Target]%c target API URL with POST payload:", "color: #9333ea; font-weight: bold;", "color: inherit;", finalUrl);
       console.log("==========================================================================");
 
-      const response = await fetch(finalUrl);
+      const response = await fetch(finalUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: contextTemplate,
+          model: 'mimo-v2',
+          protocol: 'openai'
+        })
+      });
       
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
       console.log(`[AmiruLLM Chatbot Debug] Received API status ${response.status} in ${duration}s (Expected minimum ~7.0s)`);
