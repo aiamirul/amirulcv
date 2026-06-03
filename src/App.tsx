@@ -268,9 +268,7 @@ User Query message: ${userMsg}`;
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          message: contextTemplate,
-          model: 'mimo-v2',
-          protocol: 'openai'
+          message: contextTemplate
         })
       });
       
