@@ -16,6 +16,7 @@ interface TokenUsageRecord {
 
 interface TokenStatsModalProps {
   onClose: () => void;
+  isInline?: boolean;
 }
 
 // Fixed conversion rate: 10000 tokens = 1 kwh = 0.4 USD = 12 KM EV drive
@@ -23,7 +24,7 @@ const TOKENS_PER_KWH = 10000;
 const KWH_COST_USD = 0.4;
 const EV_KM_PER_10K_TOKENS = 12;
 
-export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose }) => {
+export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose, isInline = false }) => {
   // Read records from localStorage
   const [records, setRecords] = useState<TokenUsageRecord[]>(() => {
     const cached = localStorage.getItem('amirullm-token-usage-history');
@@ -236,37 +237,34 @@ export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose }) => 
     return pathData;
   };
 
-  return (
-    <div 
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-5 animate-fade-in no-print cursor-pointer"
-    >
-      <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[96vh] md:max-h-[90vh] text-left cursor-default">
-        
-        {/* Modal Header */}
-        <div className="bg-gradient-to-r from-indigo-750 via-indigo-600 to-purple-800 text-white p-4 sm:p-5 flex justify-between items-center border-b border-white/10 shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
-              <BarChart2 className="w-5 h-5 text-purple-200 animate-pulse" />
-            </div>
-            <div>
-              <h2 className="text-sm sm:text-base font-display font-black uppercase tracking-wider text-white flex items-center gap-2">
-                AmiruLLM Token Engine Metrics & Eco-Budget Monitor
-              </h2>
-              <p className="text-[10px] text-indigo-200 font-semibold uppercase tracking-wide">
-                Virtual AI Career Representative • Cost & Power Resource Audit Room
-              </p>
-            </div>
+  const modalInnerContent = (
+    <div className={`bg-[var(--bg-secondary)] border border-[var(--border-color)] w-full rounded-2xl flex flex-col text-left cursor-default overflow-hidden ${isInline ? 'h-full border-none rounded-none' : 'max-w-4xl shadow-2xl max-h-[96vh] md:max-h-[90vh]'}`}>
+      
+      {/* Modal Header */}
+      <div className="bg-gradient-to-r from-indigo-750 via-indigo-600 to-purple-800 text-white p-4 sm:p-5 flex justify-between items-center border-b border-white/10 shadow-md shrink-0">
+        <div className="flex items-center gap-3 font-sans">
+          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border border-white/20 shadow-inner">
+            <BarChart2 className="w-5 h-5 text-purple-200 animate-pulse" />
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowExplanation(!showExplanation)}
-              className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-1 font-bold"
-              title="How this works"
-            >
-              <HelpCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">Info</span>
-            </button>
+          <div>
+            <h2 className="text-xs sm:text-sm font-display font-black uppercase tracking-wider text-white flex items-center gap-2">
+              AmiruLLM Token Engine Metrics & Eco-Budget Monitor
+            </h2>
+            <p className="text-[10px] text-indigo-200 font-semibold uppercase tracking-wide">
+              Virtual AI Career Representative • Cost & Power Resource Audit Room
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 font-sans">
+          <button
+            onClick={() => setShowExplanation(!showExplanation)}
+            className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer text-xs flex items-center gap-1 font-bold font-sans"
+            title="How this works"
+          >
+            <HelpCircle className="w-4 h-4 font-sans" />
+            <span className="hidden sm:inline font-sans">Info</span>
+          </button>
+          {!isInline && (
             <button
               onClick={onClose}
               className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer"
@@ -274,12 +272,13 @@ export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose }) => 
             >
               <X className="w-5 h-5" />
             </button>
-          </div>
+          )}
         </div>
+      </div>
 
-        {/* Info panel */}
-        {showExplanation && (
-          <div className="bg-indigo-950/50 border-b border-indigo-900/30 p-4 text-xs text-indigo-250 leading-relaxed grid sm:grid-cols-2 gap-4">
+      {/* Info panel */}
+      {showExplanation && (
+        <div className="bg-indigo-950/50 border-b border-indigo-900/30 p-4 text-xs text-indigo-250 leading-relaxed grid sm:grid-cols-2 gap-4 shrink-0 overflow-y-auto max-h-[220px]">
             <div>
               <h4 className="font-bold text-indigo-300 uppercase mb-1">📐 Dynamic Conversion Math Formula</h4>
               <p>Each interaction with the amirul.cloud server returns real response objects containing prompt, completion, and reasoning token lengths. Ecological conversions are derived as follows:</p>
@@ -679,14 +678,70 @@ export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose }) => 
         </div>
 
         {/* Modal Footer banner */}
-        <div className="bg-[var(--bg-secondary)] border-t border-[var(--border-color)] p-4 text-center text-[10px] text-[var(--text-secondary)] font-mono">
+        <div className="bg-[var(--bg-secondary)] border-t border-[var(--border-color)] p-4 text-center text-[10px] text-[var(--text-secondary)] font-mono shrink-0">
           AmiruLLM carbon-offset budget auditing uses static calculations mapped derived from actual MiMo-v2.5-pro token metrics.
         </div>
       </div>
+  );
+
+  if (isInline) {
+    return (
+      <>
+        {modalInnerContent}
+        {/* Modern CSS Confirmation Dialog Overlay */}
+        {showConfirmReset && (
+          <div className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in no-print text-slate-100">
+            <div className="bg-[var(--bg-secondary)] border-2 border-rose-500/50 w-full max-w-md rounded-2xl shadow-rose-950/30 shadow-2xl p-6 text-left space-y-4 animate-scale-up">
+              <div className="flex items-center gap-3 text-rose-500">
+                <div className="p-2.5 bg-rose-500/10 rounded-xl border border-rose-500/25">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-display font-black text-sm uppercase tracking-wider text-[var(--text-primary)]">
+                    Reset Audit Logs
+                  </h3>
+                  <p className="text-[9px] text-rose-400 font-bold uppercase tracking-wide font-mono leading-none mt-1">
+                    Irreversible Data Purge
+                  </p>
+                </div>
+              </div>
+              
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Are you absolutely sure you want to delete all local token usage interaction logs? This will wipe the interactive plot analytics and reset your eco-budget metrics back to zero.
+              </p>
+
+              <div className="flex gap-2.5 justify-end pt-2">
+                <button
+                  onClick={() => setShowConfirmReset(false)}
+                  className="px-3.5 py-2 hover:bg-slate-800 border border-[var(--border-color)] text-[var(--text-secondary)] rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmClearData}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shadow-md shadow-rose-900/35 transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Permanently Purge Logs</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
+  return (
+    <div 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-5 animate-fade-in no-print cursor-pointer text-slate-100"
+    >
+      {modalInnerContent}
 
       {/* Modern CSS Confirmation Dialog Overlay */}
       {showConfirmReset && (
-        <div className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in no-print">
+        <div className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in no-print text-slate-100">
           <div className="bg-[var(--bg-secondary)] border-2 border-rose-500/50 w-full max-w-md rounded-2xl shadow-rose-950/30 shadow-2xl p-6 text-left space-y-4 animate-scale-up">
             <div className="flex items-center gap-3 text-rose-500">
               <div className="p-2.5 bg-rose-500/10 rounded-xl border border-rose-500/25">

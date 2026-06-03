@@ -147,6 +147,10 @@ export default function App() {
   });
 
   // 9. AmiruLLM Chatbot State
+  const [isFullscreenChat, setIsFullscreenChat] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('fullscreen') === 'chat';
+  });
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [chatInput, setChatInput] = useState('');
@@ -204,11 +208,28 @@ export default function App() {
   };
 
   const chatEndRef = React.useRef<HTMLDivElement>(null);
+  const fullscreenChatEndRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleUrlChange = () => {
+      const params = new URLSearchParams(window.location.search);
+      setIsFullscreenChat(params.get('fullscreen') === 'chat');
+    };
+    window.addEventListener('popstate', handleUrlChange);
+    return () => window.removeEventListener('popstate', handleUrlChange);
+  }, []);
+
   useEffect(() => {
     if (chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [chatMessages, isChatLoading, isChatOpen]);
+
+  useEffect(() => {
+    if (isFullscreenChat && fullscreenChatEndRef.current) {
+      fullscreenChatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, isChatLoading, isFullscreenChat]);
 
   const handleSendChatMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -575,59 +596,61 @@ User Query message: ${userMsg}`;
       {/* ──────────────────────────────────────────────────────────────────
           Floating Navigation Control Utility Hub (No-Print)
           ────────────────────────────────────────────────────────────────── */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 no-print">
-        {/* Toggle AmiruLLM Chat Button */}
-        <button
-          onClick={() => setIsChatOpen(!isChatOpen)}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer relative group shadow-xl ${
-            isChatOpen 
-              ? 'bg-rose-500 hover:bg-rose-650 ring-4 ring-rose-500/20' 
-              : 'bg-indigo-600 hover:bg-indigo-700 hover:scale-105 ring-4 ring-indigo-500/10'
-          } text-white`}
-          title="Chat with AmiruLLM"
-          aria-label="Toggle AmiruLLM Chatbox"
-        >
-          {isChatOpen ? (
-            <X className="w-5 h-5" />
-          ) : (
-            <MessageSquare className="w-5 h-5" />
-          )}
-          <span className="absolute -left-36 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
-            Chat with AmiruLLM
-          </span>
-          {!isChatOpen && (
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-purple-500 text-[10px] font-bold rounded-full flex items-center justify-center text-white animate-pulse border border-[var(--bg-primary)]">
-              AI
-            </span>
-          )}
-        </button>
-
-        <button
-          onClick={() => setIsResumeOpen(true)}
-          className="w-12 h-12 rounded-full bg-[var(--accent-primary)] hover:scale-105 hover:bg-[var(--accent-hover)] text-white shadow-xl flex items-center justify-center transition-all cursor-pointer relative group-hover"
-          title="Print & Download Resume"
-          aria-label="Toggle Resume PDF view"
-        >
-          <Printer className="w-5 h-5" />
-          <span className="absolute -left-36 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
-            Printable PDF CV
-          </span>
-        </button>
-
-        {isDevMode && (
+      {!isFullscreenChat && (
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 no-print">
+          {/* Toggle AmiruLLM Chat Button */}
           <button
-            onClick={() => setIsCmsOpen(true)}
-            className="w-12 h-12 rounded-full bg-slate-950 hover:scale-105 text-white border border-slate-800 shadow-xl flex items-center justify-center transition-all cursor-pointer relative group ring-2 ring-indigo-500/20"
-            title="Manage Content (CMS Dashboard)"
-            aria-label="Open CMS Content dashboard"
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer relative group shadow-xl ${
+              isChatOpen 
+                ? 'bg-rose-500 hover:bg-rose-650 ring-4 ring-rose-500/20' 
+                : 'bg-indigo-600 hover:bg-indigo-700 hover:scale-105 ring-4 ring-indigo-500/10'
+            } text-white`}
+            title="Chat with AmiruLLM"
+            aria-label="Toggle AmiruLLM Chatbox"
           >
-            <Settings className="w-5 h-5 animate-spin-slow" />
+            {isChatOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <MessageSquare className="w-5 h-5" />
+            )}
             <span className="absolute -left-36 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
-              Manage Portfolio CMS
+              Chat with AmiruLLM
+            </span>
+            {!isChatOpen && (
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-purple-500 text-[10px] font-bold rounded-full flex items-center justify-center text-white animate-pulse border border-[var(--bg-primary)]">
+                AI
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setIsResumeOpen(true)}
+            className="w-12 h-12 rounded-full bg-[var(--accent-primary)] hover:scale-105 hover:bg-[var(--accent-hover)] text-white shadow-xl flex items-center justify-center transition-all cursor-pointer relative group-hover"
+            title="Print & Download Resume"
+            aria-label="Toggle Resume PDF view"
+          >
+            <Printer className="w-5 h-5" />
+            <span className="absolute -left-36 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
+              Printable PDF CV
             </span>
           </button>
-        )}
-      </div>
+
+          {isDevMode && (
+            <button
+              onClick={() => setIsCmsOpen(true)}
+              className="w-12 h-12 rounded-full bg-slate-950 hover:scale-105 text-white border border-slate-800 shadow-xl flex items-center justify-center transition-all cursor-pointer relative group ring-2 ring-indigo-500/20"
+              title="Manage Content (CMS Dashboard)"
+              aria-label="Open CMS Content dashboard"
+            >
+              <Settings className="w-5 h-5 animate-spin-slow" />
+              <span className="absolute -left-36 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
+                Manage Portfolio CMS
+              </span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ──────────────────────────────────────────────────────────────────
           Pristine Global Header Navigation Bar
@@ -1824,10 +1847,10 @@ User Query message: ${userMsg}`;
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedProject(null); }}
           className="fixed inset-0 z-50 overflow-hidden bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 no-print animate-fade-in cursor-pointer"
         >
-          <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row max-h-[90vh] animate-scale-up cursor-default">
+          <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] w-full max-w-[94vw] lg:max-w-7xl rounded-3xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row h-[85vh] md:h-[80vh] max-h-[90vh] animate-scale-up cursor-default">
             
             {/* Left Part: 50% width dynamic media slider / carousel */}
-            <div className="relative w-full md:w-1/2 bg-[var(--bg-tertiary)] border-b md:border-b-0 md:border-r border-[var(--border-color)] flex flex-col justify-center min-h-[250px] sm:min-h-[300px] md:min-h-0 select-none">
+            <div className="relative w-full md:w-1/2 bg-[var(--bg-tertiary)] border-b md:border-b-0 md:border-r border-[var(--border-color)] flex flex-col justify-center min-h-[220px] sm:min-h-[280px] md:min-h-0 h-1/3 md:h-full select-none">
               {(() => {
                 const carouselImages = [
                   selectedProject.coverImage,
@@ -1943,7 +1966,7 @@ User Query message: ${userMsg}`;
             </div>
 
             {/* Right Part: 50% width scrollable details */}
-            <div className="w-full md:w-1/2 flex flex-col h-full overflow-hidden relative">
+            <div className="w-full md:w-1/2 flex flex-col h-2/3 md:h-full overflow-hidden relative">
               {/* Close Button for desktop layout inside details */}
               <button 
                 onClick={() => setSelectedProject(null)}
@@ -2020,7 +2043,7 @@ User Query message: ${userMsg}`;
                     
                     return (
                       <div className="space-y-3">
-                        <div className="space-y-2.5 pr-1">
+                        <div className={`space-y-2.5 ${isProjectDescExpanded ? 'max-h-[220px] sm:max-h-[300px] overflow-y-auto pr-3 scrollbar-thin bg-[var(--bg-primary)] p-3 rounded-xl border border-[var(--border-color)]/80 text-left' : 'pr-1'}`}>
                           {elements}
                         </div>
                         {isTooLong && (
@@ -2686,6 +2709,204 @@ User Query message: ${userMsg}`;
             <p className="text-[10px] text-white/45 tracking-wider uppercase font-medium select-none">
               Click anywhere or press <kbd className="bg-white/15 text-white/90 px-1.5 py-0.5 rounded font-mono text-[9px] mx-1">ESC</kbd> to return
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────────────
+          FULLSCREEN SPLIT CHAT MODE INTERACTIVE PANEL (No-Print)
+          ────────────────────────────────────────────────────────────────── */}
+      {isFullscreenChat && (
+        <div 
+          className="fixed inset-0 z-50 bg-[var(--bg-primary)] text-[var(--text-primary)] flex flex-col h-screen no-print select-none animate-fade-in text-slate-100"
+        >
+          {/* Top Control Header Bar */}
+          <div className="p-4 bg-slate-900 border-b border-[var(--border-color)] flex justify-between items-center shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-inner">
+                <Sparkles className="w-5 h-5 text-indigo-400 animate-pulse" />
+              </div>
+              <div className="text-left font-sans">
+                <h2 className="text-sm sm:text-base font-display font-black uppercase tracking-wider text-white">
+                  AmiruLLM Command Center
+                </h2>
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
+                  Real-Time Telemetry & Representative Dialogue Split Room
+                </p>
+              </div>
+            </div>
+            <div>
+              <button
+                onClick={() => {
+                  setIsFullscreenChat(false);
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('fullscreen');
+                  window.history.pushState({}, '', url.toString());
+                }}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center gap-1.5 cursor-pointer font-sans"
+              >
+                <X className="w-4 h-4" />
+                <span>Exit Hub</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Split Panel Body */}
+          <div className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden h-full min-h-0 bg-slate-950">
+            {/* Left Pane: Stats Component */}
+            <div className="flex-1 h-full min-h-0 relative bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-lg">
+              <TokenStatsModal 
+                onClose={() => {}} 
+                isInline={true} 
+                key={`stats-${chatMessages.length}`}
+              />
+            </div>
+
+            {/* Right Pane: Full-Height Chat Component */}
+            <div className="w-full md:w-[450px] lg:w-[490px] h-full flex flex-col bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-lg overflow-hidden min-h-0 shrink-0">
+              {/* Chat Sub-Header */}
+              <div className="bg-gradient-to-r from-indigo-750 via-indigo-600 to-purple-800 text-white p-4 flex justify-between items-center shadow-md shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative">
+                    <div className="w-9 h-9 rounded-full bg-white/10 dark:bg-black/20 flex items-center justify-center border border-white/20 shadow-inner">
+                      <Sparkles className="w-4 h-4 text-purple-300 animate-pulse" />
+                    </div>
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[var(--bg-secondary)] rounded-full animate-ping"></span>
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-[var(--bg-secondary)] rounded-full"></span>
+                  </div>
+                  <div className="text-left font-sans">
+                    <h4 className="font-display font-black text-xs uppercase tracking-wider text-white">AmiruLLM Dynamic Chat</h4>
+                    <p className="text-[9px] text-indigo-200 font-semibold tracking-wide">Carrier Dialogue Representative</p>
+                  </div>
+                </div>
+                <div>
+                  <button
+                    onClick={handleRestartConversation}
+                    className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer flex items-center gap-1 font-sans"
+                    title="Restart Conversation"
+                    aria-label="Restart Conversation"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-indigo-300" />
+                    <span className="text-[10px] font-bold">Restart</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Chat Messages stream */}
+              <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[var(--bg-primary)]/30 scrollbar-thin flex flex-col text-left">
+                {chatMessages.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-slate-400 space-y-3 font-sans">
+                    <div className="w-12 h-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
+                      <MessageSquare className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">Inquire Representative Brain</h4>
+                      <p className="text-[11px] mt-1 text-slate-500 max-w-xs leading-normal">
+                        Type a custom inquiry below or utilize one of our quick seeding chips to trigger career dialogue.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  chatMessages.map((msg, index) => (
+                    <div
+                      key={msg.id || index}
+                      className={`flex gap-2.5 max-w-[85%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse text-right' : 'mr-auto text-left'}`}
+                    >
+                      {msg.role === 'assistant' && (
+                        <div className="w-6 h-6 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-505/20 shrink-0 flex items-center justify-center text-[9px] font-extrabold select-none">
+                          AI
+                        </div>
+                      )}
+                      <div>
+                        <div 
+                          className={`p-3 rounded-2xl text-xs leading-relaxed font-sans whitespace-pre-wrap break-words ${
+                            msg.role === 'user'
+                              ? 'bg-indigo-600 text-white rounded-tr-xs text-left'
+                              : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-tl-xs shadow-xs'
+                          }`}
+                        >
+                          {msg.content}
+                        </div>
+                        <span className={`text-[8px] text-[var(--text-secondary)] mt-1 font-mono block px-1 ${msg.role === 'user' && 'text-right'}`}>
+                          {msg.timestamp}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+                
+                {/* Loading indicators */}
+                {isChatLoading && (
+                  <div className="flex gap-2.5 mr-auto max-w-[85%]">
+                    <div className="w-6 h-6 rounded-full bg-indigo-500/10 text-indigo-400 shrink-0 flex items-center justify-center text-[9px] font-bold">
+                      AI
+                    </div>
+                    <div>
+                      <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-primary)] px-4 py-3.5 rounded-2xl rounded-tl-xs text-xs flex flex-col gap-2 shadow-xs max-w-[270px] sm:max-w-[310px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                          <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                          <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                          <span className="font-mono text-[9px] text-[var(--text-secondary)] font-bold ml-1 flex items-center gap-1">
+                            Reasoning time: <span className="text-rose-500 text-[10px] animate-pulse">{chatElapsedTime}s</span>
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-[var(--text-secondary)] font-medium leading-relaxed">
+                          {chatElapsedTime < 4 && "⚡ Connecting to custom brain on amirul.cloud..."}
+                          {chatElapsedTime >= 4 && chatElapsedTime < 9 && "🎯 Initializing resume context of Amirul..."}
+                          {chatElapsedTime >= 9 && chatElapsedTime < 15 && "🧠 Analysing computer vision achievements..."}
+                          {chatElapsedTime >= 15 && chatElapsedTime < 22 && "⏳ Deep reasoning with MiMo-v2.5-pro (customary: ~20s)..."}
+                          {chatElapsedTime >= 22 && "🚀 Formulating finalized answer response..."}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={fullscreenChatEndRef} />
+              </div>
+
+              {/* Suggestions chips */}
+              <div className="px-3.5 py-2 border-t border-[var(--border-color)] bg-[var(--bg-secondary)]/70 overflow-x-auto flex gap-1.5 scrollbar-none shrink-0 whitespace-nowrap">
+                {[
+                  'Explain computer vision experience',
+                  'What publications do you have?', 
+                  'List core tech skills', 
+                  'Who is your current employer?'
+                ].map((suggest, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setChatInput(suggest)}
+                    className="text-[10px] font-bold bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-full px-2.5 py-1 text-[var(--text-secondary)] hover:text-indigo-600 dark:hover:text-indigo-455 hover:border-indigo-500 transition-colors cursor-pointer select-none"
+                  >
+                    {suggest}
+                  </button>
+                ))}
+              </div>
+
+              {/* Chat Form submission */}
+              <form
+                onSubmit={handleSendChatMessage}
+                className="p-3 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] flex gap-2 shrink-0"
+              >
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Query AmiruLLM regarding this CV..."
+                  disabled={isChatLoading}
+                  className="flex-1 min-w-0 bg-[var(--bg-primary)] border border-[var(--border-color)] rounded-xl px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-secondary)]/50 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all disabled:opacity-60"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim() || isChatLoading}
+                  className="w-8 h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center transition-all cursor-pointer shadow disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  aria-label="Transmit Message"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
