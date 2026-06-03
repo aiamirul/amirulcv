@@ -33,9 +33,12 @@ export const ResumePDF: React.FC<ResumePreviewProps> = ({
   };
 
   return (
-    <div className="min-height-screen bg-slate-900/60 backdrop-blur-sm fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-10 flex flex-col items-center no-print animate-fade-in font-sans">
+    <div 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="min-height-screen bg-slate-900/60 backdrop-blur-sm fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-10 flex flex-col items-center no-print animate-fade-in font-sans cursor-pointer"
+    >
       {/* Control Bar - Not Shown on Print */}
-      <div className="w-full max-w-4xl bg-slate-800 text-white rounded-t-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-2xl border-b border-slate-700">
+      <div className="w-full max-w-4xl bg-slate-800 text-white rounded-t-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-2xl border-b border-slate-700 cursor-default">
         <div className="flex items-center gap-3">
           <button
             onClick={onClose}
@@ -63,7 +66,7 @@ export const ResumePDF: React.FC<ResumePreviewProps> = ({
       </div>
 
       {/* Interactive Options Strip (No-Print) */}
-      <div className="w-full max-w-4xl bg-slate-850 border-b border-slate-700 text-white px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-2xl no-print text-xs">
+      <div className="w-full max-w-4xl bg-slate-850 border-b border-slate-700 text-white px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3 shadow-2xl no-print text-xs cursor-default">
         <div className="flex flex-wrap items-center gap-5 w-full sm:w-auto">
           <div className="flex items-center gap-2.5">
             <span className="text-slate-400 font-extrabold uppercase tracking-wider text-[10px]">Layout Style:</span>
@@ -112,7 +115,7 @@ export const ResumePDF: React.FC<ResumePreviewProps> = ({
       {/* The Printable Page Sheet */}
       <div 
         id="resume-sheet"
-        className="w-full max-w-4xl bg-white text-black p-6 sm:p-10 md:p-12 shadow-2xl rounded-b-xl flex flex-col gap-6 font-sans leading-relaxed text-sm ring-1 ring-slate-200 overflow-hidden"
+        className="w-full max-w-4xl bg-white text-black p-6 sm:p-10 md:p-12 shadow-2xl rounded-b-xl flex flex-col gap-6 font-sans leading-relaxed text-sm ring-1 ring-slate-200 overflow-hidden cursor-default"
         style={{ color: '#1a1a1a', background: '#fafafb' }}
       >
         {printMode === 'plain' ? (

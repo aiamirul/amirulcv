@@ -237,8 +237,11 @@ export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose }) => 
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-5 animate-fade-in no-print">
-      <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[96vh] md:max-h-[90vh] text-left">
+    <div 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-5 animate-fade-in no-print cursor-pointer"
+    >
+      <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[96vh] md:max-h-[90vh] text-left cursor-default">
         
         {/* Modal Header */}
         <div className="bg-gradient-to-r from-indigo-750 via-indigo-600 to-purple-800 text-white p-4 sm:p-5 flex justify-between items-center border-b border-white/10 shadow-md">

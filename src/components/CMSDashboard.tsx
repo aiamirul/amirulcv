@@ -503,7 +503,10 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-slate-900/70 backdrop-blur-sm flex justify-end no-print animate-fade-in text-slate-800">
+    <div 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 overflow-hidden bg-slate-900/70 backdrop-blur-sm flex justify-end no-print animate-fade-in text-slate-800 cursor-pointer"
+    >
       {/* Visual notification badge */}
       {notification && (
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-2 p-4 rounded-xl shadow-2xl border text-white text-sm font-semibold max-w-sm animate-slide-in ${
@@ -517,7 +520,7 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
       )}
 
       {/* Editor Main Block */}
-      <div className="w-full max-w-4xl bg-white h-full flex flex-col shadow-2xl relative animate-slide-left border-l border-slate-200">
+      <div className="w-full max-w-4xl bg-white h-full flex flex-col shadow-2xl relative animate-slide-left border-l border-slate-200 cursor-default">
         
         {/* Header toolbar */}
         <div className="bg-slate-900 text-white p-5 flex justify-between items-center shrink-0">

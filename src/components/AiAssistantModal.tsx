@@ -522,9 +522,12 @@ ${JSON.stringify(data, null, 2)}
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-10 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in no-print font-sans">
+    <div 
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-10 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-fade-in no-print font-sans cursor-pointer"
+    >
       <div 
-        className="relative w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] text-slate-100"
+        className="relative w-full max-w-3xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh] text-slate-100 cursor-default"
         id="ai-assistant-modal"
       >
         {/* Modal Header */}

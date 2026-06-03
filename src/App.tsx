@@ -90,10 +90,29 @@ export default function App() {
   const [cvShowProfilePic, setCvShowProfilePic] = useState<boolean>(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projectCarouselIndex, setProjectCarouselIndex] = useState(0);
+  const [isProjectDescExpanded, setIsProjectDescExpanded] = useState(false);
+  const [expandedPubs, setExpandedPubs] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setProjectCarouselIndex(0);
+    setIsProjectDescExpanded(false);
   }, [selectedProject]);
+
+  // Global Escape key event handler to return to all closed popups
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedProject(null);
+        setSelectedBlog(null);
+        setIsAiModalOpen(false);
+        setIsStatsOpen(false);
+        setIsResumeOpen(false);
+        setIsCmsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
   const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
@@ -1609,8 +1628,11 @@ User Query message: ${userMsg}`;
             <section id="detailed-publications" className="space-y-8 scroll-mt-24">
               <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
                 <Globe className="w-5 h-5 text-[var(--accent-primary)]" />
-                <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
-                  Publications & Research Work
+                <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase flex items-center gap-2.5">
+                  <span>Publications & Research Work</span>
+                  <span className="text-xs font-mono font-bold bg-[var(--accent-light)] text-[var(--accent-primary)] px-2.5 py-0.5 rounded-full border border-[var(--accent-primary)]/10 shadow-xs">
+                    {portfolioData.publications.length}
+                  </span>
                 </h2>
               </div>
 
@@ -1671,9 +1693,19 @@ User Query message: ${userMsg}`;
                         Venue: <span className="italic">{pub.journal}</span>
                       </p>
                       {pub.description && (
-                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed border-t border-[var(--border-color)]/60 pt-2.5 mt-2">
-                          {pub.description}
-                        </p>
+                        <div className="border-t border-[var(--border-color)]/60 pt-2.5 mt-2 space-y-2">
+                          <p className={`text-xs text-[var(--text-secondary)] leading-relaxed transition-all duration-350 ${expandedPubs[pub.id] ? '' : 'line-clamp-2'}`}>
+                            {pub.description}
+                          </p>
+                          {pub.description.length > 100 && (
+                            <button
+                              onClick={() => setExpandedPubs(prev => ({ ...prev, [pub.id]: !prev[pub.id] }))}
+                              className="text-[10px] font-bold text-[var(--accent-primary)] hover:text-[var(--accent-hover)] transition-colors cursor-pointer flex items-center gap-1 bg-[var(--bg-tertiary)] border border-[var(--border-color)] px-2 py-1 rounded-md w-fit select-none"
+                            >
+                              {expandedPubs[pub.id] ? 'Show Less ▴' : 'Read More ▾'}
+                            </button>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1783,11 +1815,14 @@ User Query message: ${userMsg}`;
           MODAL LIGHTBOX: Project In-Depth Analytical View
           ────────────────────────────────────────────────────────────────── */}
       {selectedProject && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 no-print animate-fade-in">
-          <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl relative animate-scale-up">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedProject(null); }}
+          className="fixed inset-0 z-50 overflow-hidden bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 no-print animate-fade-in cursor-pointer"
+        >
+          <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row max-h-[90vh] animate-scale-up cursor-default">
             
-            {/* Aspect image cover banner */}
-            <div className="relative aspect-video border-b border-[var(--border-color)] group/carousel">
+            {/* Left Part: 50% width dynamic media slider / carousel */}
+            <div className="relative w-full md:w-1/2 bg-[var(--bg-tertiary)] border-b md:border-b-0 md:border-r border-[var(--border-color)] flex flex-col justify-center min-h-[250px] sm:min-h-[300px] md:min-h-0 select-none">
               {(() => {
                 const carouselImages = [
                   selectedProject.coverImage,
@@ -1824,10 +1859,10 @@ User Query message: ${userMsg}`;
                       />
                     )}
 
-                    {/* Close action button */}
+                    {/* Close action button for mobile only inside left media banner */}
                     <button 
                       onClick={() => setSelectedProject(null)}
-                      className="absolute top-4 right-4 z-10 w-9 h-9 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white cursor-pointer transition-colors shadow-md"
+                      className="absolute top-4 right-4 z-10 w-9 h-9 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center text-white cursor-pointer transition-colors shadow-md md:hidden"
                       aria-label="Close project details"
                     >
                       <X className="w-4 h-4" />
@@ -1891,63 +1926,136 @@ User Query message: ${userMsg}`;
               })()}
             </div>
 
-            <div className="p-6 md:p-8 space-y-6">
-              <div>
-                <span className="text-[10px] font-mono tracking-wider font-extrabold uppercase bg-[var(--accent-light)] text-[var(--accent-primary)] px-2.5 py-1 rounded inline-block mb-3 select-none">
-                  Portfolio Documentation
-                </span>
-                <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight font-display">
-                  {selectedProject.title}
-                </h3>
-                <p className="text-xs sm:text-sm text-[var(--text-secondary)] italic mt-1 bg-[var(--bg-primary)] p-3 rounded-lg border border-[var(--border-color)]">
-                  {selectedProject.briefDescription}
-                </p>
-              </div>
+            {/* Right Part: 50% width scrollable details */}
+            <div className="w-full md:w-1/2 flex flex-col h-full overflow-hidden relative">
+              {/* Close Button for desktop layout inside details */}
+              <button 
+                onClick={() => setSelectedProject(null)}
+                className="absolute top-4 right-4 z-20 w-8 h-8 bg-[var(--bg-primary)] hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-color)] rounded-full hidden md:flex items-center justify-center cursor-pointer transition-colors shadow-sm"
+                aria-label="Close project details"
+              >
+                <X className="w-4 h-4" />
+              </button>
 
-              <div>
-                <h4 className="text-xs uppercase font-extrabold tracking-widest text-[var(--text-secondary)] border-b border-[var(--border-color)] pb-1 mb-2.5">
-                  Analytical Breakdown & Systems Overview
-                </h4>
-                <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
-                  {selectedProject.longDescription}
-                </p>
-              </div>
-
-              <div>
-                <h4 className="text-xs uppercase font-extrabold tracking-widest text-[var(--text-secondary)] mb-2">
-                  Integrated Technologies
-                </h4>
-                <div className="flex flex-wrap gap-1.5 select-none">
-                  {selectedProject.tags.map((tag) => (
-                    <span key={tag} className="text-[10px] sm:text-xs font-mono font-bold text-[var(--text-secondary)] bg-[var(--bg-tertiary)] border border-[var(--border-color)] px-2.5 py-1 rounded">
-                      {tag}
-                    </span>
-                  ))}
+              <div className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1 pr-4 scrollbar-thin">
+                <div>
+                  <span className="text-[10px] font-mono tracking-wider font-extrabold uppercase bg-[var(--accent-light)] text-[var(--accent-primary)] px-2.5 py-1 rounded inline-block mb-3 select-none animate-pulse">
+                    Portfolio Documentation
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight font-display text-[var(--text-primary)] leading-snug">
+                    {selectedProject.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-[var(--text-secondary)] italic mt-2 bg-[var(--bg-primary)] p-3 rounded-lg border border-[var(--border-color)]">
+                    {selectedProject.briefDescription}
+                  </p>
                 </div>
-              </div>
 
-              {/* Handles links */}
-              <div className="flex gap-3 justify-end pt-4 border-t border-[var(--border-color)]">
-                {selectedProject.githubLink && (
-                  <a 
-                    href={selectedProject.githubLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-2 hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs font-bold uppercase tracking-wider rounded-lg border border-[var(--border-color)] flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Github className="w-3.5 h-3.5" /> Source Code
-                  </a>
-                )}
-                {selectedProject.liveLink && (
-                  <a 
-                    href={selectedProject.liveLink}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white text-xs font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" /> Launch Sandbox
-                  </a>
-                )}
+                <div>
+                  <h4 className="text-xs uppercase font-extrabold tracking-widest text-[var(--text-secondary)] border-b border-[var(--border-color)] pb-1 mb-2.5">
+                    Analytical Breakdown & Systems Overview
+                  </h4>
+                  {(() => {
+                    const text = selectedProject.longDescription || '';
+                    const limit = 280;
+                    const isTooLong = text.length > limit;
+                    const displayText = isTooLong && !isProjectDescExpanded ? text.substring(0, limit) + '...' : text;
+                    
+                    // Parsing lines to allow custom points
+                    const lines = displayText.split('\n');
+                    const elements: React.ReactNode[] = [];
+                    let currentList: React.ReactNode[] = [];
+                    
+                    lines.forEach((line, lineIdx) => {
+                      const trimmed = line.trim();
+                      if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+                        const content = trimmed.substring(1).trim();
+                        currentList.push(
+                          <li key={`bullet-${lineIdx}`} className="flex items-start gap-2 text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+                            <span className="text-[var(--accent-primary)] mt-1.5 select-none font-extrabold text-[8px] sm:text-[10px] shrink-0">●</span>
+                            <span>{content}</span>
+                          </li>
+                        );
+                      } else {
+                        if (currentList.length > 0) {
+                          elements.push(
+                            <ul key={`list-${lineIdx}`} className="space-y-1.5 py-1 pl-2">
+                              {currentList}
+                            </ul>
+                          );
+                          currentList = [];
+                        }
+                        if (trimmed) {
+                          elements.push(
+                            <p key={`p-${lineIdx}`} className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
+                              {trimmed}
+                            </p>
+                          );
+                        }
+                      }
+                    });
+                    
+                    if (currentList.length > 0) {
+                      elements.push(
+                        <ul key="list-final" className="space-y-1.5 py-1 pl-2">
+                          {currentList}
+                        </ul>
+                      );
+                    }
+                    
+                    return (
+                      <div className="space-y-3">
+                        <div className="space-y-2.5 pr-1">
+                          {elements}
+                        </div>
+                        {isTooLong && (
+                          <button
+                            onClick={() => setIsProjectDescExpanded(!isProjectDescExpanded)}
+                            className="text-xs font-bold text-[var(--accent-primary)] hover:text-[var(--accent-hover)] transition-colors cursor-pointer flex items-center gap-1 mt-2 bg-[var(--bg-tertiary)] border border-[var(--border-color)] px-3 py-1.5 rounded-lg w-fit"
+                          >
+                            {isProjectDescExpanded ? 'Show Less ▴' : 'Read More ▾'}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+
+                <div>
+                  <h4 className="text-xs uppercase font-extrabold tracking-widest text-[var(--text-secondary)] mb-2">
+                    Integrated Technologies
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5 select-none">
+                    {selectedProject.tags.map((tag) => (
+                      <span key={tag} className="text-[10px] sm:text-xs font-mono font-bold text-[var(--text-secondary)] bg-[var(--bg-tertiary)] border border-[var(--border-color)] px-2.5 py-1 rounded">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Handles links */}
+                <div className="flex gap-3 justify-end pt-4 border-t border-[var(--border-color)]">
+                  {selectedProject.githubLink && (
+                    <a 
+                      href={selectedProject.githubLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 hover:bg-[var(--bg-tertiary)] text-[var(--text-primary)] text-xs font-bold uppercase tracking-wider rounded-lg border border-[var(--border-color)] flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <Github className="w-3.5 h-3.5" /> Source Code
+                    </a>
+                  )}
+                  {selectedProject.liveLink && (
+                    <a 
+                      href={selectedProject.liveLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white text-xs font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Launch Sandbox
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1959,8 +2067,11 @@ User Query message: ${userMsg}`;
           MODAL LIGHTBOX: Article Reading Overlay
           ────────────────────────────────────────────────────────────────── */}
       {selectedBlog && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 no-print animate-fade-in">
-          <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] animate-scale-up">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedBlog(null); }}
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 no-print animate-fade-in cursor-pointer"
+        >
+          <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl relative flex flex-col max-h-[90vh] animate-scale-up cursor-default">
             
             {/* Header controls inside modal */}
             <div className="p-4 bg-[var(--bg-tertiary)] border-b border-[var(--border-color)] flex justify-between items-center sm:px-6">
