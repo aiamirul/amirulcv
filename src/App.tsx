@@ -282,7 +282,7 @@ export default function App() {
   }[]>([]);
 
   // 10. AmiruLLM Fullscreen Advanced Features Tab & API States
-  const [fullscreenLeftTab, setFullscreenLeftTab] = useState<'budget' | 'logs' | 'quota' | 'comparison'>('budget');
+  const [fullscreenLeftTab, setFullscreenLeftTab] = useState<'budget' | 'logs' | 'quota' | 'comparison' | 'chat'>('budget');
   const [hideChatInComparison, setHideChatInComparison] = useState<boolean>(true);
   const [jobDescriptionInput, setJobDescriptionInput] = useState<string>('');
   const [comparisonReport, setComparisonReport] = useState<string>('');
@@ -1452,7 +1452,7 @@ To support the server costs of AmiruLLM, please consider donating:
     : portfolioData.projects.filter(p => p.tags.includes(activeProjectFilter));
 
   return (
-    <div className="bg-[var(--bg-primary)] text-[var(--text-primary)] transition-all duration-305 flex flex-col justify-between min-h-screen selection:bg-[var(--accent-primary)] selection:text-white">
+    <div className="bg-[var(--bg-primary)] text-[var(--text-primary)] transition-all duration-305 flex flex-col justify-between min-h-screen overflow-x-hidden selection:bg-[var(--accent-primary)] selection:text-white">
 
       {/* ──────────────────────────────────────────────────────────────────
           Accessibility: Skip Navigation Link for Keyboard Seekers
@@ -1572,11 +1572,11 @@ To support the server costs of AmiruLLM, please consider donating:
             {/* Sparkles AI button */}
             <button
               onClick={() => setIsAiModalOpen(true)}
-              className="text-xs font-bold uppercase tracking-wider bg-purple-500/10 hover:bg-purple-600 hover:text-white text-purple-600 dark:text-purple-400 px-3.5 py-1.5 rounded-lg border border-purple-500/20 transition-all cursor-pointer flex items-center gap-1.5 focus:ring-2 focus:ring-purple-500"
+              className="text-xs font-bold uppercase tracking-wider bg-purple-500/10 hover:bg-purple-600 hover:text-white text-purple-600 dark:text-purple-400 px-2.5 sm:px-3.5 py-1.5 rounded-lg border border-purple-500/20 transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 focus:ring-2 focus:ring-purple-500"
               title="Open Dynamic AI Interview & QA Assistant Room"
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Talk to my AI Agent</span>
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span><span className="hidden sm:inline">Talk to my </span>AI Agent</span>
             </button>
 
             {/* Quick dashboard trigger (Dev Mode Only) */}
@@ -3208,7 +3208,7 @@ To support the server costs of AmiruLLM, please consider donating:
       {isChatOpen && (
         <div 
           id="amirullm-chat-dialog" 
-          className="fixed bottom-22 right-6 w-[88vw] sm:w-[380px] md:w-[410px] h-[520px] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 animate-scale-up no-print transition-all duration-300"
+          className="fixed bottom-22 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[380px] md:w-[410px] h-[75vh] sm:h-[520px] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 animate-scale-up no-print transition-all duration-300"
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-indigo-650 via-indigo-700 to-purple-800 text-white p-4 flex justify-between items-center shadow-md">
@@ -4933,12 +4933,12 @@ To support the server costs of AmiruLLM, please consider donating:
               <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-inner">
                 <Sparkles className="w-5 h-5 text-indigo-400 animate-pulse" />
               </div>
-              <div className="text-left font-sans">
-                <h2 className="text-sm sm:text-base font-display font-black uppercase tracking-wider text-white">
+              <div className="text-left font-sans min-w-0">
+                <h2 className="text-xs sm:text-base font-display font-black uppercase tracking-wider text-white truncate max-w-[170px] sm:max-w-none">
                   AmiruLLM Command Center
                 </h2>
-                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
-                  Real-Time Telemetry & Representative Dialogue Split Room
+                <p className="text-[9px] sm:text-[10px] text-slate-400 font-semibold uppercase tracking-wide leading-tight mt-0.5 max-w-[160px] sm:max-w-none">
+                  Real-Time Telemetry & Dialogue Split Room
                 </p>
               </div>
             </div>
@@ -4958,12 +4958,42 @@ To support the server costs of AmiruLLM, please consider donating:
             </div>
           </div>
 
+          {/* Mobile adaptive tab selector bar, hidden on medium screens and above */}
+          <div className="md:hidden bg-slate-900 border-b border-[var(--border-color)] p-2.5 flex overflow-x-auto gap-2 select-none shrink-0 scrollbar-none">
+            {[
+              { id: 'budget', label: 'Eco-Budget', icon: BarChart2 },
+              { id: 'logs', label: 'System Logs', icon: Terminal },
+              { id: 'quota', label: 'Telemetry', icon: Activity },
+              { id: 'comparison', label: 'Matcher', icon: FileText },
+              { id: 'chat', label: 'Chat Room', icon: MessageSquare }
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = fullscreenLeftTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setFullscreenLeftTab(tab.id as any)}
+                  className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 font-bold uppercase tracking-wider text-[10px] transition-all shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-indigo-600 text-white shadow-md font-extrabold'
+                      : 'text-slate-400 hover:text-slate-200 bg-slate-950/40'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5 shrink-0" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* Split Panel Body */}
           <div className="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden h-full min-h-0 bg-slate-950">
             {/* Left Pane: Stats Component & Telemetry tabs */}
-            <div className="flex-1 h-full min-h-0 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-lg flex flex-col">
+            <div className={`flex-1 h-full min-h-0 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl overflow-hidden shadow-lg flex flex-col ${
+              fullscreenLeftTab === 'chat' ? 'hidden md:flex' : 'flex'
+            }`}>
               {/* Tab Selector Bar */}
-              <div className="bg-slate-900/60 p-2.5 border-b border-[var(--border-color)] flex flex-wrap items-center justify-between gap-2 shrink-0 select-none">
+              <div className="bg-slate-900/60 p-2.5 border-b border-[var(--border-color)] hidden md:flex flex-wrap items-center justify-between gap-2 shrink-0 select-none">
                 <div className="flex bg-slate-950/60 p-1 rounded-xl border border-[var(--border-color)] text-xs font-sans">
                   <button
                     onClick={() => setFullscreenLeftTab('budget')}
@@ -5720,7 +5750,9 @@ To support the server costs of AmiruLLM, please consider donating:
 
             {/* Right Pane: Full-Height Chat Component */}
             {!(fullscreenLeftTab === 'comparison' && hideChatInComparison) && (
-              <div className="w-full md:w-[450px] lg:w-[490px] h-full flex flex-col bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-lg overflow-hidden min-h-0 shrink-0">
+              <div className={`w-full md:w-[450px] lg:w-[490px] h-full flex flex-col bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-lg overflow-hidden min-h-0 shrink-0 ${
+                fullscreenLeftTab === 'chat' ? 'flex' : 'hidden md:flex'
+              }`}>
               {/* Chat Sub-Header */}
               <div className="bg-gradient-to-r from-indigo-750 via-indigo-600 to-purple-800 text-white p-4 flex justify-between items-center shadow-md shrink-0">
                 <div className="flex items-center gap-2.5">

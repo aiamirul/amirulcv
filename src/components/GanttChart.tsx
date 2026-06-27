@@ -211,8 +211,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({ experience }) => {
       </div>
 
       {/* Timeline Stage Canvas */}
-      <div className="relative border border-[var(--border-color)] rounded-xl bg-[var(--bg-primary)] p-4 overflow-x-auto min-w-0 mb-6">
-        <div className="min-w-[650px] relative pb-2 pt-8 select-none">
+      <div className="relative border border-[var(--border-color)] rounded-xl bg-[var(--bg-primary)] p-5 pt-7 overflow-x-auto min-w-0 mb-6">
+        <div className="min-w-[650px] relative pb-2 pt-10 select-none">
           
           {/* Vertical Year Grid Lines */}
           <div className="absolute inset-0 pointer-events-none">
@@ -222,7 +222,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ experience }) => {
                 className="absolute top-0 bottom-0 border-l border-[var(--border-color)] border-dashed transition-all"
                 style={{ left: `${marker.leftPercent}%` }}
               >
-                <span className="absolute -top-6 -left-4 text-[9.5px] font-mono font-bold text-[var(--text-secondary)] bg-[var(--bg-primary)] px-1 rounded">
+                <span className="absolute top-0 -translate-x-1/2 text-[10px] font-mono font-extrabold text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2.5 py-0.5 rounded-full border border-[var(--border-color)]/80 shadow-xs">
                   {marker.year}
                 </span>
               </div>
