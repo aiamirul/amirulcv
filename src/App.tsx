@@ -2547,6 +2547,21 @@ User Query message: ${userMsg}`;
                 <span className="text-[10px] font-bold hidden sm:inline">Stats</span>
               </button>
               <button
+                onClick={() => {
+                  setIsFullscreenChat(true);
+                  setIsChatOpen(false);
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('fullscreen', 'chat');
+                  window.history.pushState({}, '', url.toString());
+                }}
+                className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                title="Enter Fullscreen Split Chat Mode"
+                aria-label="Fullscreen Chat"
+              >
+                <Maximize2 className="w-3.5 h-3.5 text-indigo-300" />
+                <span className="text-[10px] font-bold hidden sm:inline">Fullscreen</span>
+              </button>
+              <button
                 onClick={handleRestartConversation}
                 className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                 title="Restart Conversation"
