@@ -436,31 +436,8 @@ export default function App() {
     setIsChatLoading(true);
 
     try {
-      // Build optimized contextual resume summary to prevent HTTP 414 URL Too Long
-      const compactJsonStr = JSON.stringify({
-        profile: {
-          name: portfolioData.profile.name,
-          title: portfolioData.profile.title,
-          current_role: portfolioData.profile.currentRole,
-          about: portfolioData.profile.aboutBrief,
-        },
-        education: portfolioData.education.map(edu => ({
-          institution: edu.institution,
-          degree: edu.degree,
-          field: edu.fieldOfStudy
-        })),
-        experience: portfolioData.experience.slice(0, 3).map(exp => ({
-          company: exp.company,
-          role: exp.role,
-          description: exp.description.substring(0, 120) + '...'
-        })),
-        projects: portfolioData.projects.slice(0, 4).map(proj => ({
-          title: proj.title,
-          tags: proj.tags,
-          desc: proj.briefDescription
-        })),
-        skills: portfolioData.skills?.slice(0, 15).map(s => s.name)
-      });
+      // Build full portfolio data JSON context as requested by the user
+      const fullJsonStr = JSON.stringify(portfolioData, null, 2);
 
       // Maintain complete conversation continuity by including all historical messages plus current query
       const fullHistory = [
@@ -488,7 +465,7 @@ export default function App() {
       }
 
       const contextTemplate = `Act in the role of an assistant asking and answering questions about the following candidate resume JSON:
-${compactJsonStr}
+${fullJsonStr}
 
 --- SYSTEM CONFIGURATION DIRECTIVES ---
 - ${lengthDirective}
@@ -505,7 +482,7 @@ User Query message: ${userMsg}`;
       
       // Pretty print database & conversation details for high-fidelity developer debugging
       console.log("%c==================== AMIRULLM OUTGOING CONTEXT DEBUG ====================", "color: #4f46e5; font-weight: bold; font-size: 11px;");
-      console.log("%c[Profile Scope]%c candidate details payload mapped:", "color: #9333ea; font-weight: bold;", "color: inherit;", JSON.parse(compactJsonStr));
+      console.log("%c[Profile Scope]%c candidate details payload mapped:", "color: #9333ea; font-weight: bold;", "color: inherit;", JSON.parse(fullJsonStr));
       console.log("%c[Chat Scope]%c conversation history sequence:\n", "color: #9333ea; font-weight: bold;", "color: inherit;", 
         fullHistory.map(m => `  • [${m.role.toUpperCase()}] ${m.timestamp}: "${m.content}"`).join("\n")
       );
