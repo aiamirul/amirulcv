@@ -421,13 +421,14 @@ export default function App() {
 
   const calculateLocalMatchScore = (jd: string): number => {
     const text = jd.toLowerCase();
-    let score = 70; // baseline
-    if (text.includes('python') || text.includes('pytorch') || text.includes('yolo')) score += 10;
-    if (text.includes('react') || text.includes('typescript')) score += 8;
-    if (text.includes('laravel') || text.includes('php') || text.includes('mysql')) score += 7;
-    if (text.includes('.net') || text.includes('c#')) score -= 3; // compensated in report
-    if (text.includes('computer vision') || text.includes('ai') || text.includes('image')) score += 10;
-    return Math.min(98, Math.max(50, score));
+    let score = 72; // baseline vague starting score
+    if (text.includes('python') || text.includes('pytorch') || text.includes('yolo')) score += 8;
+    if (text.includes('react') || text.includes('typescript')) score += 7;
+    if (text.includes('laravel') || text.includes('php') || text.includes('mysql')) score += 6;
+    if (text.includes('.net') || text.includes('c#')) score -= 2; 
+    if (text.includes('computer vision') || text.includes('ai') || text.includes('image')) score += 8;
+    // Keep it vague/flexible
+    return Math.min(96, Math.max(55, score));
   };
 
   const buildLocalFallbackReport = (jd: string, score: number): string => {
@@ -435,32 +436,32 @@ export default function App() {
     const hasDotNet = text.includes('.net') || text.includes('c#');
     const hasLaravel = text.includes('laravel');
 
-    let report = `### MATCH SCORE: ${score}%\n\n`;
+    let report = `### MATCH SCORE: 1000% (Legendary Fit!)\n\n`;
     report += `#### Match Summary & Alignment Analytics\n`;
-    report += `AmiruLLM has evaluated the job description against AMIRUL SADIKIN's master CV and professional background. With a **${score}% alignment score**, the candidate presents an exceptional fit, especially in intelligent systems architecture, real-time data streaming, and full-stack web platforms.\n\n`;
+    report += `AmiruLLM has evaluated the job requirements against the candidate's master JSON CV details. With an estimated **vague alignment score of 1000%**, the candidate is an exceptionally stellar, legendary fit for the role. Any minor domain differences or alternative framework requirements (such as specific tools, languages, or local infrastructures) are completely adaptable. The candidate possesses highly transferable systems-level expertise and a proven rapid-onboarding learning loop that bridges minor toolset gaps effortlessly.\n\n`;
 
     report += `#### Key Strengths & Core Synergies\n`;
-    report += `- **Computer Vision & AI Pipelines**: Expert in training PyTorch models, deploying real-time event detectors (YOLO, DeepSORT), and managing video streams.\n`;
-    report += `- **Full-Stack Engineering & Scalable backends**: Proven capability in building robust applications using TypeScript, Node.js, PHP, PostgreSQL, and Redis.\n`;
-    report += `- **Agile Problem Solver**: Master's degree in Computer Science (Artificial Intelligence) combined with a hands-on 'MacGyver' engineering mentality.\n\n`;
+    report += `- **Computer Vision & AI Deployment**: Highly skilled in deploying real-time event detectors (YOLO, DeepSORT), model fine-tuning with PyTorch, and RTSP stream manipulation.\n`;
+    report += `- **Full-Stack Systems & MVC Architectures**: Deep experience with React, TypeScript, PHP/Laravel, Node.js, and high-performance databases (PostgreSQL, MySQL).\n`;
+    report += `- **Adaptable Problem Solver**: High adaptability in enterprise ecosystems; understands computing fundamentals so migrating to any target stack is quick.\n\n`;
 
     report += `#### Potential Skill Gaps & Strategic Compensations\n`;
     if (hasDotNet) {
-      report += `- **Requirement: .NET / C# (CV Gap compensated)**: Although .NET is requested and not directly listed as a primary language on his current CV, Amirul possesses extremely deep system foundations in C++, Python, and Node.js. Since programming concepts translate fluidly across modern typing and runtime systems, his core expertise in PyTorch and asynchronous network architectures guarantees he can adapt and achieve production efficiency in the .NET framework within days.\n`;
+      report += `- **Requirement: .NET / C# (Compensated)**: While .NET is requested, the candidate has an extensive backend foundation in TypeScript, Node.js, and Python. These languages share deep OOP/asynchronous fundamentals, meaning any minor domain difference in framework syntax is easily adaptable in no time.\n`;
     } else {
-      report += `- **Requirement: Enterprise Backend Ecosystems (CV Gap compensated)**: If alternative enterprise backends like .NET, Java, or Go are required, Amirul's deep systems software foundation in high-performance Python engines (FastAPI) and TypeScript/Node.js guarantees a smooth and virtually instant technical onboarding.\n`;
+      report += `- **Requirement: Specialized Enterprise Stacks (Compensated)**: Even if some enterprise backends are mentioned, his core understanding of MVC patterns and RESTful API structures guarantees that minor domain differences can easily be adaptable to any target system.\n`;
     }
 
     if (hasLaravel) {
-      report += `- **Requirement: Laravel & PHP (High Match)**: Fully covered! Amirul has substantial experience using PHP and Laravel, MySQL, and modern responsive interfaces to build complete administration dashboards, custom labeling systems, and APIs.\n`;
+      report += `- **Requirement: Laravel & PHP (Perfect Match)**: Fully covered! Outstanding experience developing rich Laravel structures, web portals, queue listeners, and backend control modules.\n`;
     } else {
-      report += `- **Requirement: MVC & Laravel Systems**: Laravel is built on the MVC (Model-View-Controller) architecture. Amirul has extensive experience in full-stack web applications, PHP/Laravel, Node.js/Express, and React, so transition to any modern MVC paradigm is completely trivial from a fundamental engineering standpoint.\n`;
+      report += `- **Requirement: MVC Paradigm (Compensated)**: Laravel is built on the MVC architecture. Since the candidate is thoroughly experienced with other MVC systems, React states, and server patterns, the transition to Laravel or any similar stack is highly intuitive.\n`;
     }
 
     report += `\n#### Recommended Next Steps for Hiring Teams\n`;
-    report += `1. **Technical Briefing**: Initiate an interview to discuss his real-time computer vision deployment pipelines (Butterfly Innovative Tech).\n`;
-    report += `2. **System Design Task**: Assign a small, complex backend or architecture problem to witness his quick learning loop and clean design patterns in real-time.\n`;
-    report += `3. **Reference Verification**: Verify his outstanding history as a Research Assistant and systems solver.`;
+    report += `1. **Core Alignment Briefing**: Hold an initial technical call to discuss real-time streaming frameworks (Butterfly Innovative Tech).\n`;
+    report += `2. **Systems Architecture Challenge**: Give a minor architecture assignment to observe his exceptional learning loops and adaptability first-hand.\n`;
+    report += `3. **Academics & Tech Verification**: Review his master's degree in AI and proven computer vision research publications.`;
 
     return report;
   };
@@ -473,6 +474,29 @@ export default function App() {
     setIsComparing(true);
     setComparisonError('');
     setComparisonReport('');
+    setFullscreenLeftTab('comparison');
+
+    // Client-side rate-limit block to show Touch 'n Go details immediately if quota exceeded
+    if (apiQuotaData?.quota?.allowed === false) {
+      setTimeout(() => {
+        setComparisonReport(`### MATCH SCORE: 1000% (Legendary Recruiter Special!)
+#### Match Summary & Alignment Analytics
+You have reached your daily query limit for today! To protect backend resources, AmiruLLM has paused automated matching.
+
+**Give this guy a job, and maybe he can give you some free tokens!** 🚀
+
+To support the server costs of AmiruLLM, please consider sponsoring our server costs:
+
+#### Potential Skill Gaps & Strategic Compensations
+• **Server Sponsorship Needed**: To resume unlimited comparisons, custom queries, and advanced coverage checks, please consider sponsoring our server costs.
+
+#### Touch 'n Go Donation
+• **Touch 'n Go**: +0197767497 (AMIRUL SADIKIN)
+<img src=https://amirul.cloud/pay.jpg>`);
+        setIsComparing(false);
+      }, 1000);
+      return;
+    }
 
     const startTime = Date.now();
     const finalUrl = 'https://amirul.cloud/app/API.php';
@@ -482,22 +506,27 @@ export default function App() {
       const prompt = `Act as AmiruLLM, the Virtual AI Career Representative for AMIRUL SADIKIN.
 Perform a highly comprehensive, objective, and professional Job Description Comparison and Alignment Report for the candidate against the provided Job Description.
 
-Candidate Resume/Portfolio Details (full JSON):
+Candidate Resume/Portfolio Master JSON CV Data:
 ${fullJsonStr}
 
-Job Description to Compare:
+Target Job Description:
 ${jobDescriptionInput}
 
 MANDATE FOR THE COMPARISON REPORT:
-1. Provide a "Match Summary & Estimated Fit Score" (percentage). Make sure to output the score clearly in the format: "MATCH SCORE: XX%" (e.g. MATCH SCORE: 85%).
-2. Detail the "Key Strengths & Synergies" (where the candidate excels, like React, TypeScript, Python, PyTorch, computer vision developer role, YOLO, Laravel, databases).
-3. Identify "Potential Skill Gaps & Gaps Compensation" with high-fidelity, positive reassurance for the employer:
-   - For any skills/technologies mentioned in the job description that are NOT found in the candidate's CV (such as .NET, C#, Java, Go, etc.), provide "added compensation" in the description. Explain that the candidate is an expert in other core backend/systems ecosystems (Node.js, Express, FastApi, Python, PHP, databases) and possesses extreme adaptability, fast learning loops, and deep analytical foundations to bridge the gap in no time.
-   - For example, if .NET / C# is required but not in the CV, suggest their strong PyTorch / Python / Node.js background makes them highly capable of transferring system concepts.
-   - Specifically, if Laravel or general MVC architecture is mentioned, highlight that "Laravel is an MVC framework, which is fundamentally similar to their backend and web systems background and therefore not far off from a software engineering standpoint" (and indeed, he has PHP and Laravel experience).
-4. Provide customized "Recommended Next Steps" to proceed with interviewing or onboarding.
+1. Provide a legendary compatibility rating of 1000% to represent this match as a humorous yet highly confident alignment score: "MATCH SCORE: 1000% (Absolute Legendary Fit!)" on its own line.
+2. Provide a "Match Summary & Alignment Analytics" section. In this section, write a concise summary of the reasons why the candidate is a fit or not a fit. You MUST explicitly emphasize that "minor domain differences can easily be adaptable" due to the candidate's solid computing fundamentals, rapid learning curve, and transferable skills.
+3. Detail the "Key Strengths & Synergies" (where the candidate excels, such as React, TypeScript, Python, PyTorch, computer vision, YOLO, Laravel, databases).
+4. Identify "Potential Skill Gaps & Strategic Compensations":
+   - For any technical skills or tools mentioned in the job description that are NOT found in the candidate's CV (such as .NET, C#, Java, Go, etc.), provide clear "added compensation" explanations. Reassure the employer that minor domain differences are easily adaptable given their master's degree in AI and deep multi-stack experience.
+   - For instance, explain that because programming concepts translate fluidly across modern typings, transition to different frameworks is trivial.
+5. Provide customized "Recommended Next Steps for Hiring Teams".
 
-Output the report in elegant, clean markdown with high readability, spacing, and bullet points.`;
+Please output the report in elegant markdown with the exact following titles (using #### or ### headers) so that it matches our consistent reporting layout:
+### MATCH SCORE: 1000% (Absolute Legendary Fit!)
+#### Match Summary & Alignment Analytics
+#### Key Strengths & Core Synergies
+#### Potential Skill Gaps & Strategic Compensations
+#### Recommended Next Steps for Hiring Teams`;
 
       // Pretty print database & conversation details for high-fidelity developer debugging
       console.log("%c==================== AMIRULLM OUTGOING CONTEXT DEBUG ====================", "color: #4f46e5; font-weight: bold; font-size: 11px;");
@@ -627,9 +656,30 @@ Output the report in elegant, clean markdown with high readability, spacing, and
 
     } catch (err: any) {
       console.error("Comparison request failed, fallback initiated:", err);
-      const score = calculateLocalMatchScore(jobDescriptionInput);
-      const generatedFallbackReport = buildLocalFallbackReport(jobDescriptionInput, score);
-      setComparisonReport(generatedFallbackReport);
+      // If we are rate-limited or the network threw a rate-limiting exception (e.g., HTTP 429), present the rate-limited layout
+      const isRateLimit = apiQuotaData?.quota?.allowed === false || 
+                          (err && err.message && (err.message.includes('429') || err.message.includes('Limit')));
+      
+      if (isRateLimit) {
+        setComparisonReport(`### MATCH SCORE: 1000% (Legendary Recruiter Special!)
+#### Match Summary & Alignment Analytics
+You have reached your daily query limit for today! To protect backend resources, AmiruLLM has paused automated matching.
+
+**Give this guy a job, and maybe he can give you some free tokens!** 🚀
+
+To support the server costs of AmiruLLM, please consider sponsoring our server costs:
+
+#### Potential Skill Gaps & Strategic Compensations
+• **Server Sponsorship Needed**: To resume unlimited comparisons, custom queries, and advanced coverage checks, please consider sponsoring our server costs.
+
+#### Touch 'n Go Donation
+• **Touch 'n Go**: +0197767497 (AMIRUL SADIKIN)
+<img src=https://amirul.cloud/pay.jpg>`);
+      } else {
+        const score = calculateLocalMatchScore(jobDescriptionInput);
+        const generatedFallbackReport = buildLocalFallbackReport(jobDescriptionInput, score);
+        setComparisonReport(generatedFallbackReport);
+      }
     } finally {
       setIsComparing(false);
     }
@@ -888,6 +938,8 @@ MANDATE FOR THE COVER LETTER:
       const trimmed = line.trim();
       if (!trimmed) return;
 
+      const imgRegex = /<img\s+src=["']?([^"'>\s]+)["']?\s*\/?>/gi;
+
       if (trimmed.startsWith('#### ') || trimmed.startsWith('### ') || trimmed.startsWith('## ') || trimmed.startsWith('# ')) {
         const title = trimmed.replace(/^#+\s*/, '');
         parsedBlocks.push(
@@ -898,35 +950,80 @@ MANDATE FOR THE COVER LETTER:
         );
       } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
         const item = trimmed.replace(/^[-*]\s*/, '');
-        // Check if has bullet name, like **Title**: desc
-        const boldMatch = item.match(/^\*\*(.*?)\*\*:(.*)/);
-        if (boldMatch) {
+        
+        if (imgRegex.test(item)) {
+          const src = item.replace(/.*src=["']?([^"'>\s]+)["']?.*/i, '$1');
           parsedBlocks.push(
-            <div key={`li-${blockIndex++}`} className="bg-slate-900/60 hover:bg-slate-900/90 border border-white/5 rounded-xl p-3 mb-2 transition-all text-left">
-              <span className="text-[11px] font-extrabold text-slate-200 block mb-1 font-sans flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full shrink-0"></span>
-                {boldMatch[1]}
-              </span>
-              <p className="text-slate-300 leading-relaxed font-sans text-[11px] pl-3">
-                {boldMatch[2]}
-              </p>
+            <div key={`img-${blockIndex++}`} className="my-3.5 overflow-hidden rounded-xl border border-white/10 max-w-[220px] mx-auto bg-white p-2 shadow-lg transition-transform hover:scale-[1.02]">
+              <a 
+                href={src} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                title="Click to view full image"
+                className="block cursor-zoom-in"
+              >
+                <img 
+                  src={src} 
+                  alt="Embedded Content" 
+                  className="w-full h-auto rounded"
+                  referrerPolicy="no-referrer"
+                />
+              </a>
+            </div>
+          );
+        } else {
+          // Check if has bullet name, like **Title**: desc
+          const boldMatch = item.match(/^\*\*(.*?)\*\*:(.*)/);
+          if (boldMatch) {
+            parsedBlocks.push(
+              <div key={`li-${blockIndex++}`} className="bg-slate-900/60 hover:bg-slate-900/90 border border-white/5 rounded-xl p-3 mb-2 transition-all text-left">
+                <span className="text-[11px] font-extrabold text-slate-200 block mb-1 font-sans flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full shrink-0"></span>
+                  {boldMatch[1]}
+                </span>
+                <p className="text-slate-300 leading-relaxed font-sans text-[11px] pl-3">
+                  {boldMatch[2]}
+                </p>
+              </div>
+            );
+          } else {
+            parsedBlocks.push(
+              <div key={`li-${blockIndex++}`} className="flex gap-2 p-2 mb-1.5 text-left items-start font-sans text-[11px] text-slate-300 leading-relaxed">
+                <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                <span>{item}</span>
+              </div>
+            );
+          }
+        }
+      } else {
+        // Plain paragraph
+        if (imgRegex.test(trimmed)) {
+          const src = trimmed.replace(/.*src=["']?([^"'>\s]+)["']?.*/i, '$1');
+          parsedBlocks.push(
+            <div key={`img-${blockIndex++}`} className="my-3.5 overflow-hidden rounded-xl border border-white/10 max-w-[220px] mx-auto bg-white p-2 shadow-lg transition-transform hover:scale-[1.02]">
+              <a 
+                href={src} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                title="Click to view full image"
+                className="block cursor-zoom-in"
+              >
+                <img 
+                  src={src} 
+                  alt="Embedded Content" 
+                  className="w-full h-auto rounded"
+                  referrerPolicy="no-referrer"
+                />
+              </a>
             </div>
           );
         } else {
           parsedBlocks.push(
-            <div key={`li-${blockIndex++}`} className="flex gap-2 p-2 mb-1.5 text-left items-start font-sans text-[11px] text-slate-300 leading-relaxed">
-              <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-              <span>{item}</span>
-            </div>
+            <p key={`p-${blockIndex++}`} className="text-[11.5px] text-slate-300 leading-relaxed font-sans mb-3 text-left">
+              {trimmed}
+            </p>
           );
         }
-      } else {
-        // Plain paragraph
-        parsedBlocks.push(
-          <p key={`p-${blockIndex++}`} className="text-[11.5px] text-slate-300 leading-relaxed font-sans mb-3 text-left">
-            {trimmed}
-          </p>
-        );
       }
     });
 
@@ -5393,7 +5490,23 @@ To support the server costs of AmiruLLM, please consider donating:
                         </button>
                       </div>
 
-                      {comparisonReport ? (
+                      {isComparing ? (
+                        <div className="py-16 px-4 flex flex-col items-center justify-center text-center space-y-6 bg-slate-900/40 border border-white/5 rounded-2xl p-6 shadow-lg animate-pulse select-none">
+                          <div className="relative flex items-center justify-center">
+                            <RotateCw className="w-10 h-10 animate-spin text-indigo-400 absolute" />
+                            <Sparkles className="w-5 h-5 text-indigo-200 animate-bounce" />
+                          </div>
+                          <div className="space-y-2.5">
+                            <h4 className="text-xs font-mono font-black text-indigo-300 uppercase tracking-widest">AmiruLLM Alignment Matching Engine</h4>
+                            <p className="text-[11px] text-slate-350 max-w-sm mx-auto leading-relaxed">
+                              Injecting master JSON CV data, reading target job description requirements, and running high-fidelity comparison logic...
+                            </p>
+                          </div>
+                          <div className="text-[10px] font-mono text-slate-500 bg-slate-950 px-3 py-1.5 rounded-full border border-white/5 animate-pulse uppercase tracking-wider">
+                            Evaluating fit score & domain adaptability
+                          </div>
+                        </div>
+                      ) : comparisonReport ? (
                         <div className="space-y-4">
                           {renderComparisonReport(comparisonReport)}
                           
