@@ -9,7 +9,7 @@ import {
   Settings, Printer, ChevronLeft, ChevronRight, Github, Linkedin, ExternalLink, 
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
   CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw, RotateCcw,
-  FileText, Download, Sparkles, BarChart2, Maximize2, Activity, Terminal, ShieldAlert, Copy
+  FileText, Download, Sparkles, BarChart2, Maximize2, Activity, Terminal, ShieldAlert, Copy, Volume2, VolumeX
 } from 'lucide-react';
 import { PortfolioData, Project, BlogPost, SubmittedMessage, Publication } from './types';
 import { defaultPortfolioData } from './defaultData';
@@ -344,6 +344,47 @@ export default function App() {
     timestamp: string;
     isDonation?: boolean;
   }[]>([]);
+
+  const [speakingMsgId, setSpeakingMsgId] = useState<string | null>(null);
+
+  const handleToggleSpeak = (msgId: string, text: string) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+    if (speakingMsgId === msgId) {
+      window.speechSynthesis.cancel();
+      setSpeakingMsgId(null);
+    } else {
+      window.speechSynthesis.cancel();
+      
+      // Strip HTML-like image tags
+      const cleanText = text.replace(/<img\s+src=["']?([^"'>\s]+)["']?\s*\/?>/gi, '').trim();
+      
+      // Extract the first 10 words
+      const words = cleanText.split(/\s+/);
+      const first10Words = words.slice(0, 10).join(' ');
+      
+      if (!first10Words) return;
+
+      const utterance = new SpeechSynthesisUtterance(first10Words);
+      utterance.onend = () => {
+        setSpeakingMsgId(null);
+      };
+      utterance.onerror = () => {
+        setSpeakingMsgId(null);
+      };
+      
+      setSpeakingMsgId(msgId);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // 10. AmiruLLM Fullscreen Advanced Features Tab & API States
   const [fullscreenLeftTab, setFullscreenLeftTab] = useState<'budget' | 'logs' | 'quota' | 'comparison' | 'chat'>('budget');
@@ -3465,43 +3506,62 @@ To support the server costs of AmiruLLM, please consider donating:
                   </div>
                 )}
                 <div>
-                  <div 
-                    className={`p-3 rounded-2xl text-xs leading-relaxed font-sans whitespace-pre-wrap break-words ${
-                      msg.role === 'user'
-                        ? 'bg-indigo-600 text-white rounded-tr-xs text-left'
-                        : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-tl-xs shadow-xs'
-                    }`}
-                  >
-                    {(() => {
-                      const imgRegex = /<img\s+src=["']?([^"'>\s]+)["']?\s*\/?>/gi;
-                      const parts = msg.content.split(imgRegex);
-                      if (parts.length === 1) {
-                        return msg.content;
-                      }
-                      return parts.map((part, i) => {
-                        if (i % 2 === 1) {
-                          return (
-                            <div key={i} className="my-2.5 overflow-hidden rounded-xl border border-white/10 max-w-[220px] bg-white p-2 shadow-lg transition-transform hover:scale-[1.02]">
-                              <a 
-                                href={part} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                title="Click to view image"
-                                className="block cursor-zoom-in"
-                              >
-                                <img 
-                                  src={part} 
-                                  alt="Embedded Content" 
-                                  className="w-full h-auto rounded"
-                                  referrerPolicy="no-referrer"
-                                />
-                              </a>
-                            </div>
-                          );
+                  <div className="flex items-start gap-1.5">
+                    <div 
+                      className={`p-3 rounded-2xl text-xs leading-relaxed font-sans whitespace-pre-wrap break-words ${
+                        msg.role === 'user'
+                          ? 'bg-indigo-600 text-white rounded-tr-xs text-left'
+                          : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-tl-xs shadow-xs'
+                      }`}
+                    >
+                      {(() => {
+                        const imgRegex = /<img\s+src=["']?([^"'>\s]+)["']?\s*\/?>/gi;
+                        const parts = msg.content.split(imgRegex);
+                        if (parts.length === 1) {
+                          return msg.content;
                         }
-                        return part ? <span key={i}>{part}</span> : null;
-                      });
-                    })()}
+                        return parts.map((part, i) => {
+                          if (i % 2 === 1) {
+                            return (
+                              <div key={i} className="my-2.5 overflow-hidden rounded-xl border border-white/10 max-w-[220px] bg-white p-2 shadow-lg transition-transform hover:scale-[1.02]">
+                                <a 
+                                  href={part} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  title="Click to view image"
+                                  className="block cursor-zoom-in"
+                                >
+                                  <img 
+                                    src={part} 
+                                    alt="Embedded Content" 
+                                    className="w-full h-auto rounded"
+                                    referrerPolicy="no-referrer"
+                                  />
+                                </a>
+                              </div>
+                            );
+                          }
+                          return part ? <span key={i}>{part}</span> : null;
+                        });
+                      })()}
+                    </div>
+                    {msg.role === 'assistant' && (
+                      <button
+                        onClick={() => handleToggleSpeak(msg.id || index.toString(), msg.content)}
+                        className={`p-1.5 rounded-lg border text-xs shrink-0 self-center transition-all cursor-pointer ${
+                          speakingMsgId === (msg.id || index.toString())
+                            ? 'bg-rose-500/15 border-rose-500/40 text-rose-400 hover:bg-rose-500/25 active:scale-95'
+                            : 'bg-indigo-500/5 border-[var(--border-color)] text-[var(--text-secondary)] hover:text-indigo-400 hover:bg-indigo-500/12 active:scale-95'
+                        }`}
+                        title={speakingMsgId === (msg.id || index.toString()) ? "Stop Reading" : "Read first 10 words"}
+                      >
+                        {speakingMsgId === (msg.id || index.toString()) ? (
+                          <VolumeX className="w-3.5 h-3.5 animate-pulse" />
+                        ) : (
+                          <Volume2 className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    )}
                   </div>
                   <span className={`text-[8px] text-[var(--text-secondary)] mt-1 font-mono block px-1 ${msg.role === 'user' && 'text-right'}`}>
                     {msg.timestamp}
@@ -6002,80 +6062,99 @@ To support the server costs of AmiruLLM, please consider donating:
                         </div>
                       )}
                       <div>
-                        <div 
-                          className={`p-3 rounded-2xl text-xs leading-relaxed font-sans whitespace-pre-wrap break-words ${
-                            msg.role === 'user'
-                              ? 'bg-indigo-600 text-white rounded-tr-xs text-left'
-                              : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-tl-xs shadow-xs'
-                          }`}
-                        >
-                          {(() => {
-                            const imgRegex = /<img\s+src=["']?([^"'>\s]+)["']?\s*\/?>/gi;
-                            const parts = msg.content.split(imgRegex);
-                            if (parts.length === 1) {
-                              return msg.content;
-                            }
-                            return parts.map((part, i) => {
-                              if (i % 2 === 1) {
-                                return (
-                                  <div key={i} className="my-2.5 overflow-hidden rounded-xl border border-white/10 max-w-[220px] bg-white p-2 shadow-lg transition-transform hover:scale-[1.02]">
-                                    <a 
-                                      href={part} 
-                                      target="_blank" 
-                                      rel="noopener noreferrer"
-                                      title="Click to view image"
-                                      className="block cursor-zoom-in"
-                                    >
-                                      <img 
-                                        src={part} 
-                                        alt="Embedded Content" 
-                                        className="w-full h-auto rounded"
-                                        referrerPolicy="no-referrer"
-                                      />
-                                    </a>
-                                  </div>
-                                );
+                        <div className="flex items-start gap-1.5">
+                          <div 
+                            className={`p-3 rounded-2xl text-xs leading-relaxed font-sans whitespace-pre-wrap break-words ${
+                              msg.role === 'user'
+                                ? 'bg-indigo-600 text-white rounded-tr-xs text-left'
+                                : 'bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] rounded-tl-xs shadow-xs'
+                            }`}
+                          >
+                            {(() => {
+                              const imgRegex = /<img\s+src=["']?([^"'>\s]+)["']?\s*\/?>/gi;
+                              const parts = msg.content.split(imgRegex);
+                              if (parts.length === 1) {
+                                return msg.content;
                               }
-                              return part ? <span key={i}>{part}</span> : null;
-                            });
-                          })()}
-                          {msg.isDonation && (
-                            <div className="mt-3 bg-slate-950/60 p-3.5 rounded-xl border border-white/5 space-y-3 text-left">
-                              <div className="text-[11px] text-slate-300 leading-relaxed">
-                                <span className="text-rose-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Support Server Costs</span>
-                                Send Touch 'n Go sponsorship to:
-                                <div className="mt-1 font-semibold text-white bg-slate-900/80 px-2 py-1 rounded border border-white/5 select-all font-mono inline-block">
-                                  +0197767497
+                              return parts.map((part, i) => {
+                                if (i % 2 === 1) {
+                                  return (
+                                    <div key={i} className="my-2.5 overflow-hidden rounded-xl border border-white/10 max-w-[220px] bg-white p-2 shadow-lg transition-transform hover:scale-[1.02]">
+                                      <a 
+                                        href={part} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        title="Click to view image"
+                                        className="block cursor-zoom-in"
+                                      >
+                                        <img 
+                                          src={part} 
+                                          alt="Embedded Content" 
+                                          className="w-full h-auto rounded"
+                                          referrerPolicy="no-referrer"
+                                        />
+                                      </a>
+                                    </div>
+                                  );
+                                }
+                                return part ? <span key={i}>{part}</span> : null;
+                              });
+                            })()}
+                            {msg.isDonation && (
+                              <div className="mt-3 bg-slate-950/60 p-3.5 rounded-xl border border-white/5 space-y-3 text-left">
+                                <div className="text-[11px] text-slate-300 leading-relaxed">
+                                  <span className="text-rose-400 font-bold block text-[9px] uppercase tracking-wider mb-0.5">Support Server Costs</span>
+                                  Send Touch 'n Go sponsorship to:
+                                  <div className="mt-1 font-semibold text-white bg-slate-900/80 px-2 py-1 rounded border border-white/5 select-all font-mono inline-block">
+                                    +0197767497
+                                  </div>
+                                  <span className="block text-[10px] text-slate-400 mt-1">Holder: AMIRUL SADIKIN</span>
                                 </div>
-                                <span className="block text-[10px] text-slate-400 mt-1">Holder: AMIRUL SADIKIN</span>
+                                <div className="overflow-hidden rounded-xl border border-white/10 max-w-[220px] mx-auto bg-white p-2 shadow-lg transition-transform hover:scale-[1.02]">
+                                  <a 
+                                    href="https://amirul.cloud/pay.jpg" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    title="Click to open QR Code in full view"
+                                    className="block cursor-zoom-in"
+                                  >
+                                    <img 
+                                      src="https://amirul.cloud/pay.jpg" 
+                                      alt="Touch 'n Go QR Code" 
+                                      className="w-full h-auto rounded"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                  </a>
+                                </div>
+                                <div className="text-center">
+                                  <a 
+                                    href="https://amirul.cloud/pay.jpg" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[9px] font-medium text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider"
+                                  >
+                                    <span>🔍 View Full QR Image</span>
+                                  </a>
+                                </div>
                               </div>
-                              <div className="overflow-hidden rounded-xl border border-white/10 max-w-[220px] mx-auto bg-white p-2 shadow-lg transition-transform hover:scale-[1.02]">
-                                <a 
-                                  href="https://amirul.cloud/pay.jpg" 
-                                  target="_blank" 
-                                  rel="noopener noreferrer" 
-                                  title="Click to open QR Code in full view"
-                                  className="block cursor-zoom-in"
-                                >
-                                  <img 
-                                    src="https://amirul.cloud/pay.jpg" 
-                                    alt="Touch 'n Go QR Code" 
-                                    className="w-full h-auto rounded"
-                                    referrerPolicy="no-referrer"
-                                  />
-                                </a>
-                              </div>
-                              <div className="text-center">
-                                <a 
-                                  href="https://amirul.cloud/pay.jpg" 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-[9px] font-medium text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider"
-                                >
-                                  <span>🔍 View Full QR Image</span>
-                                </a>
-                              </div>
-                            </div>
+                            )}
+                          </div>
+                          {msg.role === 'assistant' && (
+                            <button
+                              onClick={() => handleToggleSpeak(msg.id || index.toString(), msg.content)}
+                              className={`p-1.5 rounded-lg border text-xs shrink-0 self-center transition-all cursor-pointer ${
+                                speakingMsgId === (msg.id || index.toString())
+                                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-400 hover:bg-rose-500/25 active:scale-95'
+                                  : 'bg-indigo-500/5 border-[var(--border-color)] text-[var(--text-secondary)] hover:text-indigo-400 hover:bg-indigo-500/12 active:scale-95'
+                              }`}
+                              title={speakingMsgId === (msg.id || index.toString()) ? "Stop Reading" : "Read first 10 words"}
+                            >
+                              {speakingMsgId === (msg.id || index.toString()) ? (
+                                <VolumeX className="w-3.5 h-3.5 animate-pulse" />
+                              ) : (
+                                <Volume2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
                           )}
                         </div>
                         <span className={`text-[8px] text-[var(--text-secondary)] mt-1 font-mono block px-1 ${msg.role === 'user' && 'text-right'}`}>
