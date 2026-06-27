@@ -114,6 +114,12 @@ export interface SectionVisibility {
   contact?: boolean;
 }
 
+export interface SectionMeta {
+  title: string;
+  aliases: string[];
+  description: string;
+}
+
 export interface PortfolioData {
   profile: ProfileInfo;
   education: Education[];
@@ -123,4 +129,5 @@ export interface PortfolioData {
   blogs: BlogPost[];
   publications?: Publication[];
   visibility?: SectionVisibility;
+  sections?: Record<string, SectionMeta>;
 }

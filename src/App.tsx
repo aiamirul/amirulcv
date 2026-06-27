@@ -9,7 +9,7 @@ import {
   Settings, Printer, ChevronLeft, ChevronRight, Github, Linkedin, ExternalLink, 
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
   CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw, RotateCcw,
-  FileText, Download, Sparkles, BarChart2, Maximize2, Activity, Terminal, ShieldAlert
+  FileText, Download, Sparkles, BarChart2, Maximize2, Activity, Terminal, ShieldAlert, Copy
 } from 'lucide-react';
 import { PortfolioData, Project, BlogPost, SubmittedMessage, Publication } from './types';
 import { defaultPortfolioData } from './defaultData';
@@ -18,6 +18,7 @@ import { CMSDashboard } from './components/CMSDashboard';
 import { ResumePDF } from './components/ResumePDF';
 import { AiAssistantModal } from './components/AiAssistantModal';
 import { TokenStatsModal } from './components/TokenStatsModal';
+import { GanttChart } from './components/GanttChart';
 import { sortTimelineItems } from './utils/dateSorter';
 
 interface ParsedLog {
@@ -165,6 +166,8 @@ export default function App() {
   const [isProjectDescExpanded, setIsProjectDescExpanded] = useState(false);
   const [expandedPubs, setExpandedPubs] = useState<Record<string, boolean>>({});
   const [fullScreenImageUrl, setFullScreenImageUrl] = useState<string | null>(null);
+  const [showBentoGantt, setShowBentoGantt] = useState<boolean>(false);
+  const [showDetailedGantt, setShowDetailedGantt] = useState<boolean>(true);
 
   useEffect(() => {
     setProjectCarouselIndex(0);
@@ -184,12 +187,15 @@ export default function App() {
           setIsStatsOpen(false);
           setIsResumeOpen(false);
           setIsCmsOpen(false);
+          setIsSettingsModalOpen(false);
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [fullScreenImageUrl]);
+
+
 
   const [selectedBlog, setSelectedBlog] = useState<BlogPost | null>(null);
   const [cardSide, setCardSide] = useState<'front' | 'back'>('front');
@@ -212,11 +218,48 @@ export default function App() {
     message: string;
   }>({ status: 'idle', message: '' });
 
-  // 8. Mode Context (Only show CMS controls when ?mode=dev)
+  // 8. Mode Context (Only show CMS controls when ?mode=dev or help copy when ?mode=copy)
   const [isDevMode, setIsDevMode] = useState<boolean>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('mode') === 'dev';
   });
+  const [isCopyMode, setIsCopyMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'copy';
+  });
+  const [isJsonMode, setIsJsonMode] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'json';
+  });
+
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+  const [rawJsonText, setRawJsonText] = useState<string>('');
+  const [jsonValidationError, setJsonValidationError] = useState<string | null>(null);
+  const [jsonSaveSuccess, setJsonSaveSuccess] = useState<boolean>(false);
+
+  const handleSetMode = (mode: string | null) => {
+    const url = new URL(window.location.href);
+    if (mode) {
+      url.searchParams.set('mode', mode);
+    } else {
+      url.searchParams.delete('mode');
+    }
+    window.history.pushState({}, '', url.toString());
+    
+    // Synchronize states
+    setIsDevMode(mode === 'dev');
+    setIsCopyMode(mode === 'copy');
+    setIsJsonMode(mode === 'json');
+  };
+
+  // Sync rawJsonText when JSON Mode is opened
+  useEffect(() => {
+    if (isJsonMode) {
+      setRawJsonText(JSON.stringify(portfolioData, null, 2));
+      setJsonValidationError(null);
+      setJsonSaveSuccess(false);
+    }
+  }, [isJsonMode, portfolioData]);
 
   // 9. AmiruLLM Chatbot State
   const [isFullscreenChat, setIsFullscreenChat] = useState<boolean>(() => {
@@ -228,6 +271,8 @@ export default function App() {
   const [chatInput, setChatInput] = useState('');
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [chatElapsedTime, setChatElapsedTime] = useState(0);
+  const [chatLengthMode, setChatLengthMode] = useState<'short' | 'long'>('short');
+  const [chatToneMode, setChatToneMode] = useState<'professional' | 'funny' | 'arrogant'>('professional');
   const [chatMessages, setChatMessages] = useState<{
     id: string;
     role: 'user' | 'assistant';
@@ -240,6 +285,7 @@ export default function App() {
   const [selectedLogFilename, setSelectedLogFilename] = useState<string | null>(null);
   const [activeLogSectionTab, setActiveLogSectionTab] = useState<'overview' | 'dialogue' | 'raw'>('overview');
   const [copiedLogStatus, setCopiedLogStatus] = useState<boolean>(false);
+  const [copiedItemKey, setCopiedItemKey] = useState<string | null>(null);
   const [apiLogsData, setApiLogsData] = useState<any>(null);
   const [apiLogsLoading, setApiLogsLoading] = useState<boolean>(false);
   const [apiLogsError, setApiLogsError] = useState<string>('');
@@ -282,6 +328,14 @@ export default function App() {
     } finally {
       setApiQuotaLoading(false);
     }
+  };
+
+  const handleCopyText = (key: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedItemKey(key);
+    setTimeout(() => {
+      setCopiedItemKey((current) => current === key ? null : current);
+    }, 2000);
   };
 
   useEffect(() => {
@@ -345,6 +399,9 @@ export default function App() {
     const handleUrlChange = () => {
       const params = new URLSearchParams(window.location.search);
       setIsFullscreenChat(params.get('fullscreen') === 'chat');
+      setIsCopyMode(params.get('mode') === 'copy');
+      setIsDevMode(params.get('mode') === 'dev');
+      setIsJsonMode(params.get('mode') === 'json');
     };
     window.addEventListener('popstate', handleUrlChange);
     return () => window.removeEventListener('popstate', handleUrlChange);
@@ -417,8 +474,25 @@ export default function App() {
       }).join('\n\n');
 
       // Assemble a default CONTEXT using the required role of assistant asking and answering details about the resume JSON
+      const lengthDirective = chatLengthMode === 'short'
+        ? "CRITICAL MANDATE: Your response MUST be extremely brief and concise. Under no circumstances should your response exceed 50 words."
+        : "CRITICAL MANDATE: Your response should be detailed, comprehensive, and thorough, but MUST NOT exceed 300 words.";
+
+      let toneDirective = "";
+      if (chatToneMode === 'professional') {
+        toneDirective = "CRITICAL TONE MANDATE: Maintain an extremely professional, helpful, polite, and elegant representation of the candidate.";
+      } else if (chatToneMode === 'funny') {
+        toneDirective = "CRITICAL TONE MANDATE: Be extremely funny, humorous, playful, and conversational! Crack jokes, make witty puns, and add funny remarks related to the query or resume details wherever possible in your response.";
+      } else if (chatToneMode === 'arrogant') {
+        toneDirective = "CRITICAL TONE MANDATE: Be arrogant, grumpy, sarcastic, highly confident, and sassy! Act as if you are slightly annoyed or bored by answering these questions, but still answer them with a hilarious, grumpy, superior attitude for fun.";
+      }
+
       const contextTemplate = `Act in the role of an assistant asking and answering questions about the following candidate resume JSON:
 ${compactJsonStr}
+
+--- SYSTEM CONFIGURATION DIRECTIVES ---
+- ${lengthDirective}
+- ${toneDirective}
 
 --- CONVERSATION HISTORY ---
 ${formattedHistory}
@@ -767,6 +841,19 @@ User Query message: ${userMsg}`;
             </span>
           </button>
 
+          {/* Advanced Configuration Settings Cog (Opens Modes Console) */}
+          <button
+            onClick={() => setIsSettingsModalOpen(true)}
+            className="w-12 h-12 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-755 hover:scale-105 text-slate-100 hover:text-white shadow-xl flex items-center justify-center transition-all cursor-pointer relative group ring-2 ring-violet-500/20"
+            title="Advanced System Modes Settings Cog"
+            aria-label="Open system configuration modes modal panel"
+          >
+            <Settings className="w-5 h-5 animate-spin-slow text-violet-400" />
+            <span className="absolute -left-48 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
+              Advanced Settings Console (Cog)
+            </span>
+          </button>
+
           {isDevMode && (
             <button
               onClick={() => setIsCmsOpen(true)}
@@ -774,7 +861,7 @@ User Query message: ${userMsg}`;
               title="Manage Content (CMS Dashboard)"
               aria-label="Open CMS Content dashboard"
             >
-              <Settings className="w-5 h-5 animate-spin-slow" />
+              <Settings className="w-5 h-5" />
               <span className="absolute -left-36 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
                 Manage Portfolio CMS
               </span>
@@ -1286,57 +1373,87 @@ User Query message: ${userMsg}`;
 
           {vis.experience && (
             <section id="experience" className={`bento-card-base ${vis.skills ? 'lg:col-span-8' : 'lg:col-span-12'} flex flex-col justify-between group min-h-[460px] relative overflow-hidden`}>
-            <div className="absolute -left-12 -top-12 w-64 h-64 bg-[var(--accent-primary)]/5 blur-3xl rounded-full pointer-events-none"></div>
-            
-            <div className="z-10 space-y-4">
-              <div className="flex items-center gap-2">
-                <Briefcase className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
-                <h3 className="text-base font-bold uppercase tracking-wider font-display">Employment History</h3>
+              <div className="absolute -left-12 -top-12 w-64 h-64 bg-[var(--accent-primary)]/5 blur-3xl rounded-full pointer-events-none"></div>
+              
+              <div className="z-10 space-y-4">
+                <div className="flex items-center justify-between gap-4 border-b border-[var(--border-color)]/30 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
+                    <h3 className="text-base font-bold uppercase tracking-wider font-display">Employment History</h3>
+                  </div>
+                  {portfolioData.experience.length > 0 && (
+                    <div className="flex bg-[var(--bg-tertiary)] p-0.5 rounded-lg border border-[var(--border-color)] select-none shrink-0">
+                      <button
+                        onClick={() => setShowBentoGantt(false)}
+                        className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-md transition-all cursor-pointer ${
+                          !showBentoGantt
+                            ? 'bg-[var(--accent-primary)] text-white shadow-sm'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Timeline List
+                      </button>
+                      <button
+                        onClick={() => setShowBentoGantt(true)}
+                        className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-md transition-all cursor-pointer ${
+                          showBentoGantt
+                            ? 'bg-[var(--accent-primary)] text-white shadow-sm'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        Gantt Chart
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {portfolioData.experience.length === 0 ? (
+                  <p className="text-xs text-[var(--text-secondary)] italic text-center p-8 bg-[var(--bg-primary)] rounded-xl border border-[var(--border-color)]">
+                    Employment Chronicles is currently empty. Open CMS system.
+                  </p>
+                ) : showBentoGantt ? (
+                  <div className="animate-fade-in py-1">
+                    <GanttChart experience={portfolioData.experience} />
+                  </div>
+                ) : (
+                  <div className="relative border-l border-[var(--border-color)] pl-4.5 space-y-6 max-h-[300px] overflow-y-auto pr-1">
+                    {portfolioData.experience.map((exp) => (
+                      <div key={exp.id} className="relative text-xs">
+                        {/* Node circle */}
+                        <span className="absolute -left-[23px] top-1 w-2 h-2 rounded-full bg-[var(--bg-primary)] border border-[var(--accent-primary)] inline-block" />
+                        
+                        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-baseline gap-1 mb-1.5">
+                          <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                            {exp.role} <span className="text-[var(--accent-primary)]">@ {exp.company}</span>
+                          </h4>
+                          <span className="text-[10px] font-mono font-bold bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] px-2 py-0.5 rounded">
+                            {exp.startDate} – {exp.endDate}
+                          </span>
+                        </div>
+                        
+                        <p className="text-[11px] text-[var(--text-secondary)] font-medium italic -mt-0.5 mb-1.5">{exp.location}</p>
+                        
+                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-2">
+                          {exp.description}
+                        </p>
+
+                        <div className="flex flex-wrap gap-1 select-none">
+                          {exp.techUsed.map((tech) => (
+                            <span key={tech} className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] font-mono text-[9px] px-1.5 py-0.5 rounded font-bold">
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {portfolioData.experience.length === 0 ? (
-                <p className="text-xs text-[var(--text-secondary)] italic text-center p-8 bg-[var(--bg-primary)] rounded-xl border border-[var(--border-color)]">
-                  Employment Chronicles is currently empty. Open CMS system.
-                </p>
-              ) : (
-                <div className="relative border-l border-[var(--border-color)] pl-4.5 space-y-6 max-h-[300px] overflow-y-auto pr-1">
-                  {portfolioData.experience.map((exp) => (
-                    <div key={exp.id} className="relative text-xs">
-                      {/* Node circle */}
-                      <span className="absolute -left-[23px] top-1 w-2 h-2 rounded-full bg-[var(--bg-primary)] border border-[var(--accent-primary)] inline-block" />
-                      
-                      <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-baseline gap-1 mb-1.5">
-                        <h4 className="font-bold text-sm text-[var(--text-primary)]">
-                          {exp.role} <span className="text-[var(--accent-primary)]">@ {exp.company}</span>
-                        </h4>
-                        <span className="text-[10px] font-mono font-bold bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] px-2 py-0.5 rounded">
-                          {exp.startDate} – {exp.endDate}
-                        </span>
-                      </div>
-                      
-                      <p className="text-[11px] text-[var(--text-secondary)] font-medium italic -mt-0.5 mb-1.5">{exp.location}</p>
-                      
-                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-2">
-                        {exp.description}
-                      </p>
-
-                      <div className="flex flex-wrap gap-1 select-none">
-                        {exp.techUsed.map((tech) => (
-                          <span key={tech} className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] font-mono text-[9px] px-1.5 py-0.5 rounded font-bold">
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <a href="#detailed-chronicles" className="mt-4 text-xs font-bold text-[var(--accent-primary)] hover:translate-x-1 duration-200 transition-transform flex items-center gap-1">
-              Check Achievements & Metrics →
-            </a>
-          </section>
+              <a href="#detailed-chronicles" className="mt-4 text-xs font-bold text-[var(--accent-primary)] hover:translate-x-1 duration-200 transition-transform flex items-center gap-1">
+                Check Achievements & Metrics →
+              </a>
+            </section>
           )}
 
           {vis.skills && (
@@ -1640,18 +1757,51 @@ User Query message: ${userMsg}`;
           
           {/* Detailed Chronicles Section */}
           {vis.experience && (
-            <section id="detailed-chronicles" className="space-y-8 scroll-mt-24">
-            <div className="flex items-center gap-2 border-b border-[var(--border-color)] pb-3">
-              <Briefcase className="w-5 h-5 text-[var(--accent-primary)]" />
-              <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
-                Work Experience
-              </h2>
+            <section id="detailed-chronicles" className="space-y-8 scroll-mt-24 font-sans">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[var(--border-color)] pb-3 gap-3">
+              <div className="flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-[var(--accent-primary)]" />
+                <h2 className="text-xl font-extrabold tracking-tight font-display text-[var(--text-primary)] uppercase">
+                  Work Experience
+                </h2>
+              </div>
+              
+              {portfolioData.experience.length > 0 && (
+                <div className="flex bg-[var(--bg-secondary)] p-0.5 rounded-xl border border-[var(--border-color)] select-none shrink-0">
+                  <button
+                    onClick={() => setShowDetailedGantt(true)}
+                    className={`px-3.5 py-1.5 text-xs font-bold font-sans rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                      showDetailedGantt
+                        ? 'bg-[var(--accent-primary)] text-white shadow font-semibold'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <BarChart2 className="w-3.5 h-3.5" />
+                    <span>Interactive Gantt Chart</span>
+                  </button>
+                  <button
+                    onClick={() => setShowDetailedGantt(false)}
+                    className={`px-3.5 py-1.5 text-xs font-bold font-sans rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                      !showDetailedGantt
+                        ? 'bg-[var(--accent-primary)] text-white shadow font-semibold'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Detailed Cards View</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {portfolioData.experience.length === 0 ? (
               <p className="text-xs text-[var(--text-secondary)] italic">No historical timeline items provided. Open CMS.</p>
+            ) : showDetailedGantt ? (
+              <div className="animate-fade-in">
+                <GanttChart experience={portfolioData.experience} />
+              </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
                 {portfolioData.experience.map((exp) => (
                   <div key={exp.id} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-2xl flex flex-col justify-between">
                     <div>
@@ -1674,7 +1824,7 @@ User Query message: ${userMsg}`;
                           <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">Core Contributions:</span>
                           <ul className="list-disc list-inside space-y-1 text-xs text-[var(--text-secondary)]">
                             {exp.achievements.map((ach, idx) => (
-                              <li key={idx} className="leading-snug pl-1.5"><span className="font-sans text-[Var(--text-secondary)]">{ach}</span></li>
+                              <li key={idx} className="leading-snug pl-1.5"><span className="font-sans text-[var(--text-secondary)]">{ach}</span></li>
                             ))}
                           </ul>
                         </div>
@@ -2439,6 +2589,63 @@ User Query message: ${userMsg}`;
             </div>
           </div>
 
+          {/* Settings Sub-Header Controls */}
+          <div className="bg-[var(--bg-secondary)] border-b border-[var(--border-color)] p-2.5 flex flex-col gap-2 shrink-0 select-none text-xs font-sans">
+            {/* Length toggle */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wider">Response Style:</span>
+              <div className="flex bg-[var(--bg-tertiary)] p-0.5 rounded-lg border border-[var(--border-color)] shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setChatLengthMode('short')}
+                  className={`px-2 py-0.5 text-[9.5px] font-bold rounded transition-all cursor-pointer ${
+                    chatLengthMode === 'short'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  Short (≤50w)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChatLengthMode('long')}
+                  className={`px-2 py-0.5 text-[9.5px] font-bold rounded transition-all cursor-pointer ${
+                    chatLengthMode === 'long'
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  Long (≤300w)
+                </button>
+              </div>
+            </div>
+
+            {/* Personality toggle */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wider">Personality:</span>
+              <div className="flex bg-[var(--bg-tertiary)] p-0.5 rounded-lg border border-[var(--border-color)] shrink-0">
+                {(['professional', 'funny', 'arrogant'] as const).map((tone) => (
+                  <button
+                    key={tone}
+                    type="button"
+                    onClick={() => setChatToneMode(tone)}
+                    className={`px-2 py-0.5 text-[9.5px] font-bold rounded transition-all cursor-pointer capitalize ${
+                      chatToneMode === tone
+                        ? tone === 'professional'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : tone === 'funny'
+                            ? 'bg-amber-600 text-white shadow-sm'
+                            : 'bg-rose-600 text-white shadow-sm'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {tone === 'funny' ? 'Funny 😜' : tone === 'arrogant' ? 'Arrogant 😠' : 'Professional 💼'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           {/* Messages Stream */}
           <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-[var(--bg-primary)]/30 scrollbar-thin flex flex-col text-left">
             {chatMessages.map((msg, index) => (
@@ -2802,6 +3009,205 @@ User Query message: ${userMsg}`;
         <TokenStatsModal onClose={() => setIsStatsOpen(false)} />
       )}
 
+      {/* ADVANCED CONFIGURATION SYSTEM MODES PANEL OVERLAY */}
+      {isSettingsModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 no-print select-none"
+          onClick={() => setIsSettingsModalOpen(false)}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-xl bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col p-5 sm:p-6 text-left animate-scale-up z-[60]"
+          >
+            {/* Header Dialog */}
+            <div className="flex justify-between items-start border-b border-white/5 pb-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20 shadow-inner">
+                  <Settings className="w-5 h-5 text-violet-400 animate-spin-slow" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-black uppercase tracking-wider text-slate-100 font-sans">
+                    Advanced Settings Console
+                  </h3>
+                  <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide font-sans">
+                    System-Level Application View & Access Controllers
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsSettingsModalOpen(false)}
+                className="p-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer border border-white/5"
+                title="Dismiss (ESC)"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content Mode Selection Card Cards */}
+            <div className="space-y-3.5 my-2">
+              <span className="text-[9.5px] font-mono text-slate-400 uppercase tracking-widest font-bold block mb-1">
+                Select Active Workspace Mode
+              </span>
+
+              {/* Mode card 1: Standard */}
+              <div 
+                onClick={() => {
+                  handleSetMode(null);
+                  setIsSettingsModalOpen(false);
+                }}
+                className={`group border rounded-xl p-3.5 flex items-start gap-3.5 cursor-pointer transition-all ${
+                  !isDevMode && !isCopyMode && !isJsonMode
+                    ? 'bg-indigo-600/10 border-indigo-500/40 shadow-inner'
+                    : 'bg-slate-950/40 border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center border shrink-0 transition-colors ${
+                  !isDevMode && !isCopyMode && !isJsonMode
+                    ? 'bg-indigo-600/20 border-indigo-500/30 text-indigo-400'
+                    : 'bg-slate-900 border-white/5 text-slate-400 group-hover:text-indigo-400'
+                }`}>
+                  <Globe className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-100 block font-sans">Pixel-Perfect Portfolio View</span>
+                    {!isDevMode && !isCopyMode && !isJsonMode && (
+                      <span className="bg-indigo-600/25 text-indigo-400 text-[8px] font-bold px-2 py-0.5 rounded font-mono uppercase">ACTIVE</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-401 font-medium leading-normal mt-0.5 font-sans">
+                    Standard visitor experience. Elegantly displays work history, research publications, and fully immersive AI integrations.
+                  </p>
+                </div>
+              </div>
+
+              {/* Mode card 2: CMS Mode */}
+              <div 
+                onClick={() => {
+                  handleSetMode('dev');
+                  setIsSettingsModalOpen(false);
+                }}
+                className={`group border rounded-xl p-3.5 flex items-start gap-3.5 cursor-pointer transition-all ${
+                  isDevMode 
+                    ? 'bg-indigo-600/10 border-indigo-500/40 shadow-inner'
+                    : 'bg-slate-950/40 border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center border shrink-0 transition-colors ${
+                  isDevMode
+                    ? 'bg-indigo-600/20 border-indigo-500/30 text-indigo-400'
+                    : 'bg-slate-900 border-white/5 text-slate-400 group-hover:text-amber-400'
+                }`}>
+                  <Settings className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-100 block font-sans">CMS Dashboard Panel Mode (?mode=dev)</span>
+                    {isDevMode && (
+                      <span className="bg-indigo-600/25 text-indigo-400 text-[8px] font-bold px-2 py-0.5 rounded font-mono uppercase">ACTIVE</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-401 font-medium leading-normal mt-0.5 font-sans">
+                    Empowers recruiters or content owners with real-time UI inputs to edit candidate profiles, adjust section aliases, and preview updates dynamically.
+                  </p>
+                </div>
+              </div>
+
+              {/* Mode card 3: Copy Console */}
+              <div 
+                onClick={() => {
+                  handleSetMode('copy');
+                  setIsSettingsModalOpen(false);
+                }}
+                className={`group border rounded-xl p-3.5 flex items-start gap-3.5 cursor-pointer transition-all ${
+                  isCopyMode
+                    ? 'bg-indigo-600/10 border-indigo-500/40 shadow-inner'
+                    : 'bg-slate-950/40 border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center border shrink-0 transition-colors ${
+                  isCopyMode
+                    ? 'bg-indigo-600/20 border-indigo-500/30 text-indigo-400'
+                    : 'bg-slate-900 border-white/5 text-slate-400 group-hover:text-emerald-400'
+                }`}>
+                  <Copy className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-100 block font-sans">Resume Copy Console (?mode=copy)</span>
+                    {isCopyMode && (
+                      <span className="bg-indigo-600/25 text-indigo-400 text-[8px] font-bold px-2 py-0.5 rounded font-mono uppercase">ACTIVE</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-401 font-medium leading-normal mt-0.5 font-sans">
+                    A single-column clipboard-optimized console designed for streamlined copy-pasting of work experience items, bios, and specific contacts.
+                  </p>
+                </div>
+              </div>
+
+              {/* Mode card 4: JSON Editor */}
+              <div 
+                onClick={() => {
+                  handleSetMode('json');
+                  setIsSettingsModalOpen(false);
+                }}
+                className={`group border rounded-xl p-3.5 flex items-start gap-3.5 cursor-pointer transition-all ${
+                  isJsonMode
+                    ? 'bg-indigo-600/10 border-indigo-500/40 shadow-inner'
+                    : 'bg-slate-950/40 border-white/5 hover:border-white/15'
+                }`}
+              >
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center border shrink-0 transition-colors ${
+                  isJsonMode
+                    ? 'bg-indigo-600/20 border-indigo-500/30 text-indigo-400'
+                    : 'bg-slate-900 border-white/5 text-slate-400 group-hover:text-purple-400'
+                }`}>
+                  <Code className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-slate-100 block font-sans">Model JSON Editor Console (?mode=json)</span>
+                    {isJsonMode && (
+                      <span className="bg-indigo-600/25 text-indigo-400 text-[8px] font-bold px-2 py-0.5 rounded font-mono uppercase">ACTIVE</span>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-401 font-medium leading-normal mt-0.5 font-sans">
+                    Direct access to raw profile model schemas with code compression tools, syntax linter checking, and an interactive save pipeline.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Reset Factory settings at base */}
+            <div className="mt-4 pt-4 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-3">
+              <button
+                onClick={() => {
+                  if (confirm("This will erase all content optimizations saved in local storage and restore original default data. Continue?")) {
+                    localStorage.removeItem('developer-portfolio-schema');
+                    setPortfolioData(defaultPortfolioData);
+                    setIsSettingsModalOpen(false);
+                    handleSetMode(null);
+                    window.location.reload();
+                  }
+                }}
+                className="px-3.5 py-1.5 bg-[var(--bg-primary)] hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 text-[10px] font-bold font-mono uppercase rounded-xl border border-white/5 hover:border-rose-900/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                type="button"
+                title="Wipe database cache"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Format Cache & Reset</span>
+              </button>
+
+              <div className="text-[10px] text-slate-500 font-medium font-mono">
+                Active: <span className="text-indigo-400">{isDevMode ? 'CMS/Dev' : isCopyMode ? 'Copy Mode' : isJsonMode ? 'JSON Mode' : 'Standard'}</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* FULLSCREEN IMAGE LIGHTBOX OVERLAY */}
       {fullScreenImageUrl && (
         <div 
@@ -2840,6 +3246,949 @@ User Query message: ${userMsg}`;
             <p className="text-[10px] text-white/45 tracking-wider uppercase font-medium select-none">
               Click anywhere or press <kbd className="bg-white/15 text-white/90 px-1.5 py-0.5 rounded font-mono text-[9px] mx-1">ESC</kbd> to return
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────────────
+          EXPRESSIVE COPY CONSOLE / ONE-COLUMN COPIER BOARD (No-Print)
+          ────────────────────────────────────────────────────────────────── */}
+      {isCopyMode && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col h-screen no-print select-text animate-fade-in overflow-hidden font-sans"
+        >
+          {/* Header Bar */}
+          <header className="p-4 bg-slate-900 border-b border-white/5 flex flex-col sm:flex-row justify-between items-center shrink-0 gap-3">
+            <div className="flex items-center gap-3 self-start sm:self-auto">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-inner shrink-0">
+                <Copy className="w-5 h-5 text-indigo-400" />
+              </div>
+              <div className="text-left">
+                <h1 className="text-sm sm:text-base font-black uppercase tracking-wider text-white">
+                  Resume Copy Console
+                </h1>
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">
+                  1-Column Instant Clipboarding & Fast Copy Hub
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                onClick={() => {
+                  const resumeSections: string[] = [];
+                  resumeSections.push(`# ${portfolioData.profile.name}\n${portfolioData.profile.title} - ${portfolioData.profile.currentRole}`);
+                  resumeSections.push(`Email: ${portfolioData.profile.email} | Phone: ${portfolioData.profile.phone} | Location: ${portfolioData.profile.location}`);
+                  resumeSections.push(`Portfolio: ${portfolioData.profile.websiteUrl || window.location.origin} | GitHub: ${portfolioData.profile.githubUrl} | LinkedIn: ${portfolioData.profile.linkedInUrl}`);
+                  
+                  if (portfolioData.profile.aboutLong || portfolioData.profile.aboutBrief) {
+                    resumeSections.push(`## Professional Summary\n${portfolioData.profile.aboutLong || portfolioData.profile.aboutBrief}`);
+                  }
+
+                  if (portfolioData.experience && portfolioData.experience.length > 0) {
+                    const expStr = portfolioData.experience.map(exp => {
+                      const achievementsStr = exp.achievements && exp.achievements.length > 0 
+                        ? exp.achievements.map(ach => `* ${ach}`).join('\n') 
+                        : '';
+                      return `### ${exp.role} @ ${exp.company}\n${exp.startDate} - ${exp.endDate} | ${exp.location || ''}\n\n${exp.description || ''}\n${achievementsStr}`;
+                    }).join('\n\n');
+                    resumeSections.push(`## Work History\n${expStr}`);
+                  }
+
+                  if (portfolioData.education && portfolioData.education.length > 0) {
+                    const eduStr = portfolioData.education.map(edu => {
+                      return `### ${edu.degree} in ${edu.fieldOfStudy}\n${edu.institution} | ${edu.startDate} - ${edu.endDate}`;
+                    }).join('\n\n');
+                    resumeSections.push(`## Education\n${eduStr}`);
+                  }
+
+                  if (portfolioData.skills && portfolioData.skills.length > 0) {
+                    const skillsStr = portfolioData.skills.map(s => s.name).join(', ');
+                    resumeSections.push(`## Technical Skills\n${skillsStr}`);
+                  }
+
+                  handleCopyText('bulk-all', resumeSections.join('\n\n'));
+                }}
+                className={`px-3 py-2 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 active:scale-95 text-xs font-bold text-white rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5 select-none ${
+                  copiedItemKey === 'bulk-all' ? 'ring-2 ring-emerald-500' : ''
+                }`}
+                type="button"
+                title="Copy standard Markdown profile to clipboard"
+              >
+                {copiedItemKey === 'bulk-all' ? (
+                  <>
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Entire CV Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy Full CV (MD)</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsCopyMode(false);
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('mode');
+                  window.history.pushState({}, '', url.toString());
+                }}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 hover:text-white rounded-xl border border-white/5 transition-colors cursor-pointer flex items-center gap-1 shadow select-none"
+                type="button"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Exit Copy Mode</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Main copiable view in 1 column */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-950 space-y-6">
+            <div className="max-w-3xl mx-auto space-y-6">
+              
+              {/* SECTION: 1. Personal Identity */}
+              <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-lg p-5 text-left leading-relaxed">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4 select-none">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-indigo-400">1. Personal Identity & Bio</span>
+                  <div className="text-[10px] text-slate-500 font-medium">Click copy next to individual parameters</div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Name field */}
+                  <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">Full Name</span>
+                      <span className="text-sm font-semibold text-slate-100 block truncate">{portfolioData.profile.name}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopyText('name', portfolioData.profile.name)}
+                      className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                        copiedItemKey === 'name' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                      }`}
+                      title="Copy full name"
+                    >
+                      {copiedItemKey === 'name' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Title field */}
+                  <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">Professional Title</span>
+                      <span className="text-sm font-semibold text-slate-100 block truncate">{portfolioData.profile.title}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopyText('title', portfolioData.profile.title)}
+                      className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                        copiedItemKey === 'title' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                      }`}
+                      title="Copy professional title"
+                    >
+                      {copiedItemKey === 'title' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Current role field */}
+                  <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">Current Role</span>
+                      <span className="text-sm font-semibold text-slate-100 block truncate">{portfolioData.profile.currentRole}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopyText('current-role', portfolioData.profile.currentRole)}
+                      className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                        copiedItemKey === 'current-role' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                      }`}
+                      title="Copy current role"
+                    >
+                      {copiedItemKey === 'current-role' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Location field */}
+                  <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">Address / Location</span>
+                      <span className="text-sm font-semibold text-slate-100 block truncate">{portfolioData.profile.location}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopyText('location', portfolioData.profile.location)}
+                      className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                        copiedItemKey === 'location' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                      }`}
+                      title="Copy location address"
+                    >
+                      {copiedItemKey === 'location' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Phone field */}
+                  <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">Phone Contact</span>
+                      <span className="text-sm font-semibold text-slate-100 block truncate">{portfolioData.profile.phone}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopyText('phone', portfolioData.profile.phone)}
+                      className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                        copiedItemKey === 'phone' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                      }`}
+                      title="Copy phone details"
+                    >
+                      {copiedItemKey === 'phone' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* Email field */}
+                  <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">Email Address</span>
+                      <span className="text-sm font-semibold text-slate-100 block truncate">{portfolioData.profile.email}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopyText('email', portfolioData.profile.email)}
+                      className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                        copiedItemKey === 'email' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                      }`}
+                      title="Copy email address"
+                    >
+                      {copiedItemKey === 'email' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* SECTION: 2. Core Hyperlinks */}
+              <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-lg p-5 text-left leading-relaxed">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4 select-none">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-indigo-400">2. Professional Portfolio & Profile URLs</span>
+                  <div className="text-[10px] text-slate-500 font-medium">Quick copy links for applications</div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Website Url / Link */}
+                  <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">Website / Live Portfolio URL</span>
+                      <span className="text-sm font-mono text-indigo-300 block truncate">{portfolioData.profile.websiteUrl || currentUrl}</span>
+                    </div>
+                    <button
+                      onClick={() => handleCopyText('website-url', portfolioData.profile.websiteUrl || currentUrl)}
+                      className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                        copiedItemKey === 'website-url' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                      }`}
+                      title="Copy website link"
+                    >
+                      {copiedItemKey === 'website-url' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </button>
+                  </div>
+
+                  {/* GitHub Profile */}
+                  {portfolioData.profile.githubUrl && (
+                    <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">GitHub Profile URL</span>
+                        <span className="text-sm font-mono text-indigo-300 block truncate">{portfolioData.profile.githubUrl}</span>
+                      </div>
+                      <button
+                        onClick={() => handleCopyText('github-url', portfolioData.profile.githubUrl)}
+                        className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                          copiedItemKey === 'github-url' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                        }`}
+                        title="Copy GitHub URL link"
+                      >
+                        {copiedItemKey === 'github-url' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* LinkedIn Profile */}
+                  {portfolioData.profile.linkedInUrl && (
+                    <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">LinkedIn Profile URL</span>
+                        <span className="text-sm font-mono text-indigo-300 block truncate">{portfolioData.profile.linkedInUrl}</span>
+                      </div>
+                      <button
+                        onClick={() => handleCopyText('linkedin-url', portfolioData.profile.linkedInUrl)}
+                        className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                          copiedItemKey === 'linkedin-url' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                        }`}
+                        title="Copy LinkedIn URL link"
+                      >
+                        {copiedItemKey === 'linkedin-url' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Google Scholar Profile */}
+                  {portfolioData.profile.googleScholarUrl && (
+                    <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-3.5 rounded-xl flex items-center justify-between gap-4 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[9px] text-slate-400 block uppercase font-bold tracking-wider select-none">Google Scholar URL</span>
+                        <span className="text-sm font-mono text-indigo-300 block truncate">{portfolioData.profile.googleScholarUrl}</span>
+                      </div>
+                      <button
+                        onClick={() => handleCopyText('scholars-url', portfolioData.profile.googleScholarUrl)}
+                        className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                          copiedItemKey === 'scholars-url' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                        }`}
+                        title="Copy Google Scholar link"
+                      >
+                        {copiedItemKey === 'scholars-url' ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION: 3. Summaries & Introduction Info */}
+              <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-lg p-5 text-left leading-relaxed">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4 select-none">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-indigo-400">3. Profile Summary Statements</span>
+                  <div className="text-[10px] text-slate-500 font-medium">Elevator pitch or resume description block</div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Brief about summary */}
+                  {portfolioData.profile.aboutBrief && (
+                    <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-4 rounded-xl space-y-2.5 transition-colors">
+                      <div className="flex justify-between items-center select-none">
+                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Elevator About Pitch (Brief)</span>
+                        <button
+                          onClick={() => handleCopyText('about-brief', portfolioData.profile.aboutBrief)}
+                          className={`p-1.5 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                            copiedItemKey === 'about-brief' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                          }`}
+                          title="Copy brief intro summary"
+                        >
+                          {copiedItemKey === 'about-brief' ? <span className="text-[9.5px] font-bold px-1 text-emerald-400">Copied!</span> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-350 bg-slate-950/30 p-2.5 rounded border border-white/5 leading-relaxed font-sans">{portfolioData.profile.aboutBrief}</p>
+                    </div>
+                  )}
+
+                  {/* Long summary info */}
+                  {portfolioData.profile.aboutLong && (
+                    <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-4 rounded-xl space-y-2.5 transition-colors">
+                      <div className="flex justify-between items-center select-none">
+                        <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Professional Bio Summary (Long)</span>
+                        <button
+                          onClick={() => handleCopyText('about-long', portfolioData.profile.aboutLong)}
+                          className={`p-1.5 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-505/30 text-slate-400 hover:text-indigo-405 transition-all cursor-pointer ${
+                            copiedItemKey === 'about-long' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                          }`}
+                          title="Copy comprehensive biography summary"
+                        >
+                          {copiedItemKey === 'about-long' ? <span className="text-[9.5px] font-bold px-1 text-emerald-400">Copied!</span> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-350 bg-slate-950/30 p-2.5 rounded border border-white/5 leading-relaxed font-sans max-h-[160px] overflow-y-auto whitespace-pre-wrap">{portfolioData.profile.aboutLong}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION: 4. Extensive Employment & Experience History */}
+              <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-lg p-5 text-left leading-relaxed">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4 select-none">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-indigo-400">4. Detailed Career Work History</span>
+                  <button
+                    onClick={() => {
+                      const text = portfolioData.experience.map((exp, i) => {
+                        const achievements = exp.achievements && exp.achievements.length > 0 
+                          ? exp.achievements.map((ach) => `• ${ach}`).join('\n')
+                          : '';
+                        return `WORK EXPERIENCE ${i + 1}:\nCompany: ${exp.company}\nRole: ${exp.role}\nDuration: ${exp.startDate} - ${exp.endDate}\nLocation: ${exp.location || ''}\nDescription: ${exp.description}\n${achievements ? `Key Accomplishments:\n${achievements}\n` : ''}`;
+                      }).join('\n============================\n\n');
+                      handleCopyText('employment-bulk', text);
+                    }}
+                    className={`px-3 py-1.5 bg-slate-950 border border-white/5 font-mono text-[9px] uppercase tracking-wider font-extrabold rounded-lg text-slate-300 hover:text-indigo-400 hover:border-indigo-500/30 transition-all flex items-center gap-1.5 ${
+                      copiedItemKey === 'employment-bulk' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                    }`}
+                    type="button"
+                  >
+                    {copiedItemKey === 'employment-bulk' ? (
+                      <>
+                        <CheckCircle className="w-3 h-3 text-emerald-400" />
+                        <span>Copied All Corporate Roles!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy All Bulks</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {portfolioData.experience.map((exp) => {
+                    const formattedJobBlock = `${exp.role} at ${exp.company} (${exp.startDate} - ${exp.endDate}) - ${exp.location || ''}\nSummary: ${exp.description}\n${
+                      exp.achievements && exp.achievements.length > 0 ? `Accomplishments:\n${exp.achievements.map((item) => `* ${item}`).join('\n')}` : ''
+                    }`;
+
+                    return (
+                      <div key={exp.id} className="border border-white/5 hover:border-white/10 bg-slate-950/20 rounded-xl p-4 flex flex-col space-y-4 group transition-colors">
+                        
+                        {/* Header Block of Job with single unified copy */}
+                        <div className="flex justify-between items-start select-none border-b border-white/5 pb-2.5">
+                          <div className="flex-1 pr-4">
+                            <h3 className="text-[13px] font-black tracking-tight text-white">{exp.role}</h3>
+                            <div className="flex items-center gap-1.5 text-[10px] text-indigo-300 font-medium font-mono mt-0.5">
+                              <span>{exp.company}</span>
+                              <span>•</span>
+                              <span className="text-slate-450">{exp.startDate} – {exp.endDate}</span>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={() => handleCopyText(`job-comp-${exp.id}`, formattedJobBlock)}
+                            className={`px-2.5 py-1 rounded bg-slate-950 hover:bg-indigo-650/10 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all font-mono text-[8px] uppercase tracking-wider font-bold shrink-0 flex items-center gap-1 ${
+                              copiedItemKey === `job-comp-${exp.id}` ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                            }`}
+                            title="Copy complete structured details of this job"
+                          >
+                            {copiedItemKey === `job-comp-${exp.id}` ? (
+                              <>
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                                <span>Complete Block Copied</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="w-3 h-3" />
+                                <span>Copy Job Block</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+
+                        {/* Individual Parameter breakdowns */}
+                        <div className="space-y-3.5 pt-1">
+                          
+                          {/* Company / Role separately copyable */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="bg-slate-950/40 p-2.5 border border-white/5 rounded-lg flex items-center justify-between gap-2.5">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[8px] text-slate-400 block uppercase font-bold tracking-wider select-none">Company Label</span>
+                                <span className="text-[11px] text-slate-200 block truncate font-medium">{exp.company}</span>
+                              </div>
+                              <button
+                                onClick={() => handleCopyText(`job-lbl-${exp.id}`, exp.company)}
+                                className={`p-1.5 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-200 transition-colors shrink-0 ${copiedItemKey === `job-lbl-${exp.id}` ? 'text-emerald-400 bg-emerald-500/10' : ''}`}
+                                title="Copy company label"
+                              >
+                                {copiedItemKey === `job-lbl-${exp.id}` ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+
+                            <div className="bg-slate-950/40 p-2.5 border border-white/5 rounded-lg flex items-center justify-between gap-2.5">
+                              <div className="min-w-0 flex-1">
+                                <span className="text-[8px] text-slate-400 block uppercase font-bold tracking-wider select-none">Designated Role</span>
+                                <span className="text-[11px] text-slate-200 block truncate font-medium">{exp.role}</span>
+                              </div>
+                              <button
+                                onClick={() => handleCopyText(`job-rol-${exp.id}`, exp.role)}
+                                className={`p-1.5 hover:bg-slate-800 rounded text-slate-500 hover:text-slate-200 transition-colors shrink-0 ${copiedItemKey === `job-rol-${exp.id}` ? 'text-emerald-400 bg-emerald-500/10' : ''}`}
+                                title="Copy role title"
+                              >
+                                {copiedItemKey === `job-rol-${exp.id}` ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Role Description copy */}
+                          <div className="bg-slate-950/40 p-3 border border-white/5 rounded-xl space-y-1.5">
+                            <div className="flex justify-between items-center select-none">
+                              <span className="text-[8px] text-slate-400 uppercase font-bold tracking-wider">Role Description Paragraph</span>
+                              <button
+                                onClick={() => handleCopyText(`job-desc-${exp.id}`, exp.description)}
+                                className={`p-1 hover:bg-slate-800 rounded text-[9.5px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-0.5 ${
+                                  copiedItemKey === `job-desc-${exp.id}` ? 'text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5' : ''
+                                }`}
+                                title="Copy role description"
+                              >
+                                {copiedItemKey === `job-desc-${exp.id}` ? "Copied!" : <Copy className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                            <p className="text-[11px] text-slate-350 leading-relaxed font-sans">{exp.description}</p>
+                          </div>
+
+                          {/* Achievements / Bullets listed */}
+                          {exp.achievements && exp.achievements.length > 0 && (
+                            <div className="bg-slate-950/40 p-3 border border-white/5 rounded-xl space-y-2.5">
+                              <div className="flex justify-between items-center select-none">
+                                <span className="text-[8px] text-slate-400 uppercase font-bold tracking-wider">Key Job Achievements ({exp.achievements.length})</span>
+                                <button
+                                  onClick={() => handleCopyText(`job-ach-${exp.id}`, exp.achievements.map((ach) => `• ${ach}`).join('\n'))}
+                                  className={`p-1 hover:bg-slate-800 rounded text-[9.5px] font-bold text-indigo-400 tracking-wider hover:text-indigo-300 transition-colors flex items-center gap-0.5 uppercase ${
+                                    copiedItemKey === `job-ach-${exp.id}` ? 'text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5' : ''
+                                  }`}
+                                  title="Copy accomplishments"
+                                >
+                                  {copiedItemKey === `job-ach-${exp.id}` ? "Accolades Copied!" : (
+                                    <>
+                                      <Copy className="w-3.5 h-3.5" />
+                                      <span className="text-[8.5px] font-mono">Copy Bullets</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                              <ul className="text-[11px] text-slate-400 leading-relaxed font-sans space-y-1.5 pl-3 list-disc text-left">
+                                {exp.achievements.map((ach, idx) => (
+                                  <li key={idx} className="marker:text-slate-600 pl-0.5">{ach}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* SECTION: 5. Academic Credentials & Education */}
+              <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-lg p-5 text-left leading-relaxed">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4 select-none">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-indigo-400">5. Education & Qualifications</span>
+                  <div className="text-[10px] text-slate-500 font-medium">Academic degrees</div>
+                </div>
+
+                <div className="space-y-4">
+                  {portfolioData.education.map((edu) => {
+                    const formattedEdu = `${edu.degree} in ${edu.fieldOfStudy}\n${edu.institution} (${edu.startDate} - ${edu.endDate})\n${edu.description || ''}`;
+
+                    return (
+                      <div key={edu.id} className="border border-white/5 bg-slate-950/40 p-4 rounded-xl flex items-start justify-between gap-4 transition-colors">
+                        <div className="flex-1 min-w-0 text-left font-sans text-xs">
+                          <h4 className="text-[12px] font-bold text-white">{edu.degree}</h4>
+                          <p className="text-[11px] text-indigo-305 mt-1 font-semibold">{edu.fieldOfStudy}</p>
+                          <div className="flex items-center gap-1.5 mt-1 font-mono text-[9px] text-slate-500">
+                            <strong>{edu.institution}</strong>
+                            <span>•</span>
+                            <span>{edu.startDate} – {edu.endDate}</span>
+                          </div>
+                          {edu.description && <p className="text-[10px] text-slate-450 mt-2 font-sans leading-relaxed">{edu.description}</p>}
+                        </div>
+                        <button
+                          onClick={() => handleCopyText(`edu-${edu.id}`, formattedEdu)}
+                          className={`p-2 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                            copiedItemKey === `edu-${edu.id}` ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                          }`}
+                          title="Copy academy details"
+                        >
+                          {copiedItemKey === `edu-${edu.id}` ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* SECTION: 6. Skills Inventory & Tags Breakdown */}
+              <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden shadow-lg p-5 text-left leading-relaxed">
+                <div className="flex items-center justify-between border-b border-white/5 pb-3 mb-4 select-none">
+                  <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-indigo-400">6. Technical Skills Inventory</span>
+                  <div className="text-[10px] text-slate-500 font-medium">Raw list and categorized tags</div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Raw list block */}
+                  <div className="group border border-white/5 hover:border-white/10 bg-slate-950/40 p-4 rounded-xl space-y-2.5 transition-colors">
+                    <div className="flex justify-between items-center select-none">
+                      <span className="text-[8px] text-slate-400 uppercase font-bold tracking-wider">Raw Comma-Separated Skills List</span>
+                      <button
+                        onClick={() => {
+                          const listStr = portfolioData.skills.map((s) => s.name).join(', ');
+                          handleCopyText('skills-raw-list', listStr);
+                        }}
+                        className={`p-1.5 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-400 hover:text-indigo-400 transition-all cursor-pointer ${
+                          copiedItemKey === 'skills-raw-list' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : ''
+                        }`}
+                        title="Copy raw skills list string"
+                      >
+                        {copiedItemKey === 'skills-raw-list' ? <span className="text-[9.5px] font-bold px-1 text-emerald-400">Copied List!</span> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                    <div className="bg-slate-950 p-3 rounded-lg border border-white/5 select-text font-mono text-[10px] text-indigo-200 leading-normal text-left">
+                      {portfolioData.skills.map((sk) => sk.name).join(', ')}
+                    </div>
+                  </div>
+
+                  {/* Skills organized by category tags */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {['frontend', 'backend', 'devops', 'tools'].map((catKey) => {
+                      const matched = portfolioData.skills.filter((sk) => sk.category === catKey);
+                      if (matched.length === 0) return null;
+                      const catName = catKey.charAt(0).toUpperCase() + catKey.slice(1);
+                      const catText = `${catName} Skills:\n${matched.map((s) => `• ${s.name} (${s.level || 'Good'})`).join('\n')}`;
+
+                      return (
+                        <div key={catKey} className="border border-white/5 bg-slate-950/40 p-3 rounded-xl flex items-start justify-between gap-3.5">
+                          <div className="min-w-0 flex-1 text-left">
+                            <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-indigo-400 font-sans block mb-1">{catName} Group</span>
+                            <div className="flex flex-wrap gap-1 mt-1 font-mono text-[9px] text-slate-405 animate-pulse-slow">
+                              {matched.map((sk) => (
+                                <span key={sk.id} className="bg-slate-900 border border-white/5 px-2 py-0.5 rounded-md leading-relaxed">{sk.name}</span>
+                              ))}
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={() => handleCopyText(`skills-cat-${catKey}`, catText)}
+                            className={`p-1.5 rounded-lg bg-slate-950 hover:bg-indigo-600/15 border border-white/5 hover:border-indigo-500/30 text-slate-500 hover:text-indigo-400 transition-all shrink-0 ${
+                              copiedItemKey === `skills-cat-${catKey}` ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-semibold' : ''
+                            }`}
+                            title={`Copy ${catName} technology group`}
+                          >
+                            {copiedItemKey === `skills-cat-${catKey}` ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────────────
+          GRAND RAW SCHEMA MODEL JSON WORKSPACE OVERLAY (No-Print)
+          ────────────────────────────────────────────────────────────────── */}
+      {isJsonMode && (
+        <div 
+          className="fixed inset-0 z-50 bg-slate-950 text-slate-100 flex flex-col h-screen no-print select-text animate-fade-in overflow-hidden font-sans"
+        >
+          {/* Header Bar */}
+          <header className="p-4 bg-slate-900 border-b border-white/5 flex justify-between items-center shrink-0 gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center border border-violet-500/20 shadow-inner shrink-0">
+                <Code className="w-5 h-5 text-violet-400" />
+              </div>
+              <div className="text-left">
+                <h1 className="text-sm sm:text-base font-black uppercase tracking-wider text-white font-sans">
+                  Portfolio Model JSON Console
+                </h1>
+                <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide font-sans">
+                  Live Schema Raw Editor & Diagnostic Validator
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  handleSetMode(null);
+                }}
+                className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 hover:text-white rounded-xl border border-white/5 transition-colors cursor-pointer flex items-center gap-1.5 shadow select-none"
+                type="button"
+              >
+                <X className="w-4 h-4" />
+                <span>Exit JSON Mode</span>
+              </button>
+            </div>
+          </header>
+
+          {/* Main Workspace split */}
+          <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 bg-slate-950">
+            {/* Left Panel: Control / Diagnostics Console */}
+            <div className="w-full lg:w-80 bg-slate-900 border-r border-white/5 flex flex-col p-4 shrink-0 overflow-y-auto gap-4 select-none">
+              
+              {/* Validation Status Indicator */}
+              <div className="space-y-2">
+                <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 block font-bold">Linter Status</span>
+                {jsonValidationError ? (
+                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-3 text-left">
+                    <div className="flex items-center gap-2 text-rose-400 font-bold text-xs mb-1 font-sans">
+                      <ShieldAlert className="w-4 h-4 shrink-0" />
+                      <span>Syntax Error Detected</span>
+                    </div>
+                    <code className="text-[10px] text-rose-300 font-mono block break-words max-h-24 overflow-y-auto bg-slate-950/50 p-2 rounded-lg">
+                      {jsonValidationError}
+                    </code>
+                  </div>
+                ) : (
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-left flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div>
+                      <div className="text-emerald-400 font-bold text-xs font-sans">JSON Schema Valid</div>
+                      <div className="text-[10px] text-slate-400 font-medium font-mono uppercase mt-0.5">Ready to be live-compiled</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Success Notification */}
+              {jsonSaveSuccess && (
+                <div className="bg-teal-500/10 border border-teal-500/20 rounded-xl p-3 text-left flex items-center gap-2.5 animate-flash-success">
+                  <CheckCircle className="w-5 h-5 text-teal-400 shrink-0" />
+                  <div>
+                    <span className="text-teal-400 font-semibold text-xs block font-sans">Changes Compiled Safely!</span>
+                    <span className="text-[9.5px] text-slate-400 block mt-0.5 font-sans">Interactive components updated.</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Payload weight */}
+              <div className="bg-slate-950 p-3.5 border border-white/5 rounded-xl text-left">
+                <span className="text-[9.5px] font-bold text-slate-400 block uppercase font-mono tracking-wider mb-2">Model Analytics</span>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="bg-slate-900 border border-white/5 p-2 rounded-lg">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-500 font-bold block">Size</span>
+                    <span className="text-xs font-mono font-bold text-slate-200">{(rawJsonText.length / 1024).toFixed(2)} KB</span>
+                  </div>
+                  <div className="bg-slate-900 border border-white/5 p-2 rounded-lg">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-500 font-bold block">Lines</span>
+                    <span className="text-xs font-mono font-bold text-slate-200">{rawJsonText.split('\n').length} lines</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Diagnostic Checklist */}
+              <div className="bg-slate-950 p-4 border border-white/5 rounded-xl text-left space-y-2.5">
+                <span className="text-[9.5px] font-bold text-indigo-400 block uppercase font-mono tracking-wider">Dynamic Fields Present</span>
+                <div className="space-y-1.5 font-mono text-[10px] text-slate-300">
+                  {(() => {
+                    let parsed: any = null;
+                    try {
+                      parsed = JSON.parse(rawJsonText);
+                    } catch (e) {}
+
+                    const profileOk = parsed?.profile?.name && parsed?.profile?.title;
+                    const expCount = parsed?.experience ? parsed.experience.length : 0;
+                    const eduCount = parsed?.education ? parsed.education.length : 0;
+                    const skillsCount = parsed?.skills ? parsed.skills.length : 0;
+                    const projectsCount = parsed?.projects ? parsed.projects.length : 0;
+                    const sectionsOk = parsed?.sections && typeof parsed.sections === 'object';
+
+                    return (
+                      <ul className="space-y-2">
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="text-slate-400 font-sans">Profile Name & Title:</span>
+                          <span className={profileOk ? 'text-emerald-400 font-bold' : 'text-rose-400'}>
+                            {profileOk ? '✔ Loaded' : '✖ Missing'}
+                          </span>
+                        </li>
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="text-slate-400 font-sans">Education Nodes:</span>
+                          <span className="text-indigo-300">{eduCount} records</span>
+                        </li>
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="text-slate-400 font-sans">Work History:</span>
+                          <span className="text-indigo-300">{expCount} roles</span>
+                        </li>
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="text-slate-400 font-sans">Indexed Skills:</span>
+                          <span className="text-indigo-300">{skillsCount} items</span>
+                        </li>
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="text-slate-400 font-sans">Creations Portfolio:</span>
+                          <span className="text-indigo-300">{projectsCount} works</span>
+                        </li>
+                        <li className="flex items-center justify-between gap-2">
+                          <span className="text-slate-400 font-sans">Section Meta Aliases:</span>
+                          <span className={sectionsOk ? 'text-emerald-400 font-bold' : 'text-slate-500'}>
+                            {sectionsOk ? '✔ Configured' : '✖ Default'}
+                          </span>
+                        </li>
+                      </ul>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Drag & Drop File Upload Area */}
+              <div 
+                className="border-2 border-dashed border-white/10 hover:border-violet-500/40 rounded-xl p-4 bg-slate-950/40 text-center transition-colors cursor-pointer group"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.json';
+                  input.onchange = (e: any) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (evt) => {
+                        const content = evt.target?.result as string;
+                        setRawJsonText(content);
+                        try {
+                          JSON.parse(content);
+                          setJsonValidationError(null);
+                        } catch (err: any) {
+                          setJsonValidationError(err.message || 'Invalid uploaded JSON');
+                        }
+                      };
+                      reader.readAsText(file);
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                <Download className="w-5 h-5 mx-auto text-indigo-400 group-hover:scale-110 group-hover:text-indigo-300 transition-transform mb-1.5 animate-pulse" />
+                <span className="text-[10px] font-bold text-slate-300 block font-sans">Import JSON File</span>
+                <span className="text-[9px] text-slate-500 block mt-0.5 font-sans">Click to browse or drag .json schema here</span>
+              </div>
+
+              {/* Action Operations Column */}
+              <div className="space-y-2 mt-auto">
+                <button
+                  onClick={() => {
+                    try {
+                      const parsed = JSON.parse(rawJsonText);
+                      setRawJsonText(JSON.stringify(parsed, null, 2));
+                      setJsonValidationError(null);
+                    } catch (e: any) {
+                      setJsonValidationError(e.message || "Invalid JSON syntax");
+                    }
+                  }}
+                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-lg text-[10px] font-bold tracking-wider uppercase font-mono border border-white/5 cursor-pointer text-slate-205 transition-colors flex items-center justify-center gap-1.5"
+                  type="button"
+                >
+                  <Terminal className="w-3.5 h-3.5 text-indigo-100" />
+                  <span>Format / Beautify</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    try {
+                      const parsed = JSON.parse(rawJsonText);
+                      setRawJsonText(JSON.stringify(parsed));
+                      setJsonValidationError(null);
+                    } catch (e: any) {
+                      setJsonValidationError(e.message || "Invalid JSON syntax");
+                    }
+                  }}
+                  className="w-full py-2 bg-slate-800 hover:bg-slate-700 hover:text-white rounded-lg text-[10px] font-bold tracking-wider uppercase font-mono border border-white/5 cursor-pointer text-slate-205 transition-colors flex items-center justify-center gap-1.5"
+                  type="button"
+                >
+                  <Activity className="w-3.5 h-3.5 text-violet-400 animate-pulse" />
+                  <span>Minify JSON Code</span>
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setRawJsonText(JSON.stringify(defaultPortfolioData, null, 2));
+                      setJsonValidationError(null);
+                    }}
+                    className="py-1.5 bg-slate-800/50 hover:bg-slate-800 hover:text-rose-300 rounded-lg text-[9px] font-bold tracking-wider uppercase font-mono border border-white/5 cursor-pointer text-slate-400 transition-colors"
+                    type="button"
+                    title="Load original template data"
+                  >
+                    Reset Default
+                  </button>
+                  <button
+                    onClick={() => {
+                      setRawJsonText("");
+                      setJsonValidationError("JSON body is empty");
+                    }}
+                    className="py-1.5 bg-slate-800/50 hover:bg-slate-800 hover:text-rose-300 rounded-lg text-[9px] font-bold tracking-wider uppercase font-mono border border-white/5 cursor-pointer text-slate-400 transition-colors"
+                    type="button"
+                    title="Clear text buffer"
+                  >
+                    Clear Slate
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Panel: Code Editor */}
+            <div className="flex-1 flex flex-col relative overflow-hidden h-full min-h-0">
+              
+              {/* Copy / Save Toolbar */}
+              <div className="bg-slate-900 border-b border-white/5 px-4 py-2 flex items-center justify-between shrink-0 select-none">
+                <span className="text-[10px] font-mono text-slate-400">Raw Source Editor</span>
+                
+                <div className="flex items-center gap-1.5">
+                  {/* Copy Button */}
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(rawJsonText);
+                      handleCopyText('json-edit-console', rawJsonText);
+                    }}
+                    className={`px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-[10px] font-bold rounded-lg border border-white/5 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      copiedItemKey === 'json-edit-console' ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : ''
+                    }`}
+                  >
+                    {copiedItemKey === 'json-edit-console' ? (
+                      <>
+                        <CheckCircle className="w-3 h-3 text-emerald-400" />
+                        <span>JSON Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy Code</span>
+                      </>
+                    )}
+                  </button>
+
+                  {/* Save Changes button */}
+                  <button
+                    onClick={() => {
+                      try {
+                        const parsed = JSON.parse(rawJsonText);
+                        setPortfolioData(parsed);
+                        localStorage.setItem('developer-portfolio-schema', JSON.stringify(parsed));
+                        setJsonValidationError(null);
+                        setJsonSaveSuccess(true);
+                        setTimeout(() => setJsonSaveSuccess(false), 4000);
+                      } catch (err: any) {
+                        setJsonValidationError(err.message || 'Syntax parser compile failure');
+                      }
+                    }}
+                    disabled={!!jsonValidationError}
+                    className={`px-3.5 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5 select-none ${
+                      jsonValidationError 
+                        ? 'bg-slate-800 text-slate-500 cursor-not-allowed border border-white/5' 
+                        : 'bg-violet-600 hover:bg-violet-500 text-white cursor-pointer hover:shadow-lg active:scale-95'
+                    }`}
+                  >
+                    <CheckCircle className="w-3 h-3" />
+                    <span>Save to Active Schema</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Textarea container */}
+              <div className="flex-1 flex overflow-hidden min-h-0 bg-slate-950">
+                {/* Simulated Monospace Line numbers column */}
+                <div className="w-12 bg-slate-905 border-r border-white/5 py-3 text-right select-none font-mono text-[10px] text-slate-600 pr-2 leading-6 overflow-hidden">
+                  {Array.from({ length: Math.min(2000, rawJsonText.split('\n').length || 1) }).map((_, index) => (
+                    <div key={index}>{index + 1}</div>
+                  ))}
+                </div>
+
+                {/* Main Raw Code Editor Textarea */}
+                <textarea
+                  value={rawJsonText}
+                  onChange={(e) => {
+                    setRawJsonText(e.target.value);
+                    try {
+                      JSON.parse(e.target.value);
+                      setJsonValidationError(null);
+                    } catch (err: any) {
+                      setJsonValidationError(err.message || "Invalid JSON syntax");
+                    }
+                  }}
+                  className="flex-1 h-full font-mono text-xs bg-slate-950 text-slate-100 p-3 py-4 focus:outline-none focus:ring-1 focus:ring-violet-500/40 resize-none leading-6 whitespace-pre overflow-y-auto"
+                  placeholder='{"profile": { ... }}'
+                  spellCheck={false}
+                  autoFocus
+                />
+              </div>
+
+            </div>
           </div>
         </div>
       )}
@@ -3400,6 +4749,63 @@ User Query message: ${userMsg}`;
                     <RotateCcw className="w-3.5 h-3.5 text-indigo-300" />
                     <span className="text-[10px] font-bold">Restart</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Settings Sub-Header Controls */}
+              <div className="bg-[var(--bg-secondary)] border-b border-[var(--border-color)] p-2.5 flex flex-col gap-2 shrink-0 select-none text-xs font-sans">
+                {/* Length toggle */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wider">Response Style:</span>
+                  <div className="flex bg-[var(--bg-tertiary)] p-0.5 rounded-lg border border-[var(--border-color)] shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setChatLengthMode('short')}
+                      className={`px-2.5 py-0.5 text-[9.5px] font-bold rounded transition-all cursor-pointer ${
+                        chatLengthMode === 'short'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      Short (≤50w)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setChatLengthMode('long')}
+                      className={`px-2.5 py-0.5 text-[9.5px] font-bold rounded transition-all cursor-pointer ${
+                        chatLengthMode === 'long'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      Long (≤300w)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Personality toggle */}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-mono font-bold text-[var(--text-secondary)] uppercase tracking-wider">Personality:</span>
+                  <div className="flex bg-[var(--bg-tertiary)] p-0.5 rounded-lg border border-[var(--border-color)] shrink-0">
+                    {(['professional', 'funny', 'arrogant'] as const).map((tone) => (
+                      <button
+                        key={tone}
+                        type="button"
+                        onClick={() => setChatToneMode(tone)}
+                        className={`px-2.5 py-0.5 text-[9.5px] font-bold rounded transition-all cursor-pointer capitalize ${
+                          chatToneMode === tone
+                            ? tone === 'professional'
+                              ? 'bg-indigo-600 text-white shadow-sm'
+                              : tone === 'funny'
+                                ? 'bg-amber-600 text-white shadow-sm'
+                                : 'bg-rose-600 text-white shadow-sm'
+                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                        }`}
+                      >
+                        {tone === 'funny' ? 'Funny 😜' : tone === 'arrogant' ? 'Arrogant 😠' : 'Professional 💼'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

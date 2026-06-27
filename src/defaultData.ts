@@ -408,5 +408,88 @@ export const defaultPortfolioData: PortfolioData = {
     "blogs": false,
     "publications": true,
     "contact": false
+  },
+  "sections": {
+    "profile": {
+      "title": "Personal Identity",
+      "aliases": [
+        "Personal Identity",
+        "Contact Info",
+        "Bio",
+        "About Me",
+        "General Info",
+        "Candidate Details"
+      ],
+      "description": "Information regarding the candidate's name, general professional titles, location, digital profiles, contact emails, and personal brand biographies."
+    },
+    "experience": {
+      "title": "Employment History",
+      "aliases": [
+        "Employment History",
+        "Work Experience",
+        "Experience",
+        "Persons previous employment",
+        "Corporate Roles",
+        "Professional Experience",
+        "Career History",
+        "Work History"
+      ],
+      "description": "A comprehensive history of the person's previous employment, industry careers, assigned roles, duration of service, key job accomplishments, and technologies used."
+    },
+    "education": {
+      "title": "Education",
+      "aliases": [
+        "Education",
+        "Academic Credentials",
+        "Qualifications",
+        "Academic History",
+        "Degrees & Certifications",
+        "Education & Training"
+      ],
+      "description": "Chronological representation of secondary or tertiary higher education degrees, institutions/universities, dates, and research descriptors."
+    },
+    "skills": {
+      "title": "Skills Inventory",
+      "aliases": [
+        "Skills Inventory",
+        "Technical Skills",
+        "Technology Stack",
+        "Expertise",
+        "Core Proficiencies",
+        "Tools & Frameworks"
+      ],
+      "description": "Structured lists of technologies, software tools, libraries, development methodologies, and proficiency levels."
+    },
+    "projects": {
+      "title": "Creations & Portfolios",
+      "aliases": [
+        "Creations & Portfolios",
+        "Projects",
+        "Portfolio Items",
+        "Works Showcase",
+        "Case Studies"
+      ],
+      "description": "A deck of engineered projects, repositories, live URLs, and descriptions of designed systems."
+    },
+    "blogs": {
+      "title": "Articles & Writings",
+      "aliases": [
+        "Articles & Writings",
+        "Blog Posts",
+        "Publications & Insights",
+        "Writings Archive"
+      ],
+      "description": "Informational blog posts, written guides, thoughts on modern technology, and user accessibility."
+    },
+    "publications": {
+      "title": "Scientific Publications",
+      "aliases": [
+        "Scientific Publications",
+        "Academic Papers",
+        "Research Catalog",
+        "Patents & Presentations"
+      ],
+      "description": "Peer-reviewed scientific journals, book chapters, conference papers, and academic research work."
+    }
   }
 };
