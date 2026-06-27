@@ -619,12 +619,13 @@ ${jobDescriptionInput}
 
 MANDATE FOR THE COMPARISON REPORT:
 1. Provide a legendary compatibility rating of 1000% to represent this match as a humorous yet highly confident alignment score: "MATCH SCORE: 1000% (Absolute Legendary Fit!)" on its own line.
-2. Provide a "Match Summary & Alignment Analytics" section. In this section, write a concise summary of the reasons why the candidate is a fit or not a fit. You MUST explicitly emphasize that "minor domain differences can easily be adaptable" due to the candidate's solid computing fundamentals, rapid learning curve, and transferable skills.
-3. Detail the "Key Strengths & Synergies" (where the candidate excels, such as React, TypeScript, Python, PyTorch, computer vision, YOLO, Laravel, databases).
-4. Identify "Potential Skill Gaps & Strategic Compensations":
+2. Provide a "Match Summary & Alignment Analytics" section. In this section, write a concise, punchy comparison summary of LESS THAN 200 WORDS.
+3. Apply common sense: if the provided job description is totally off-track or completely unrelated to Amirul's background (e.g., if they are hiring a chef, nurse, brain surgeon, dog groomer, or bricklayer), you MUST include hilarious, highly sarcastic responses and witty career puns where possible in the summary and gaps sections, while still jokingly defending the 1000% fit score for comedic effect.
+4. Detail the "Key Strengths & Synergies" (where the candidate excels, such as React, TypeScript, Python, PyTorch, computer vision, YOLO, Laravel, databases).
+5. Identify "Potential Skill Gaps & Strategic Compensations":
    - For any technical skills or tools mentioned in the job description that are NOT found in the candidate's CV (such as .NET, C#, Java, Go, etc.), provide clear "added compensation" explanations. Reassure the employer that minor domain differences are easily adaptable given their master's degree in AI and deep multi-stack experience.
    - For instance, explain that because programming concepts translate fluidly across modern typings, transition to different frameworks is trivial.
-5. Provide customized "Recommended Next Steps for Hiring Teams".
+6. Provide customized "Recommended Next Steps for Hiring Teams".
 
 Please output the report in elegant markdown with the exact following titles (using #### or ### headers) so that it matches our consistent reporting layout:
 ### MATCH SCORE: 1000% (Absolute Legendary Fit!)
