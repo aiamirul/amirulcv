@@ -1181,7 +1181,7 @@ To support the server costs of AmiruLLM, please consider donating:
 
       // Assemble a default CONTEXT using the required role of assistant asking and answering details about the resume JSON
       const lengthDirective = chatLengthMode === 'short'
-        ? "CRITICAL MANDATE: Your response MUST be extremely brief and concise. Under no circumstances should your response exceed 50 words."
+        ? "CRITICAL MANDATE: Your response MUST be extremely brief and concise. Under no circumstances should your response exceed 100 words."
         : "CRITICAL MANDATE: Your response should be detailed, comprehensive, and thorough, but MUST NOT exceed 300 words.";
 
       let toneDirective = "";
@@ -3410,7 +3410,7 @@ To support the server costs of AmiruLLM, please consider donating:
                       : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                   }`}
                 >
-                  Short (≤50w)
+                  Short (≤100w)
                 </button>
                 <button
                   type="button"
@@ -5904,7 +5904,7 @@ To support the server costs of AmiruLLM, please consider donating:
                           : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                       }`}
                     >
-                      Short (≤50w)
+                      Short (≤100w)
                     </button>
                     <button
                       type="button"
