@@ -131,6 +131,49 @@ export const GanttChart: React.FC<GanttChartProps> = ({ experience }) => {
     return parsedItems.find((exp) => exp.id === selectedExpId) || null;
   }, [parsedItems, selectedExpId]);
 
+  // Calculate actual union (combined non-overlapping) experience duration based on overlapped months
+  const combinedStats = useMemo(() => {
+    const itemsToCalculate = selectedTech 
+      ? parsedItems.filter(item => item.techUsed.includes(selectedTech))
+      : parsedItems;
+      
+    if (itemsToCalculate.length === 0) {
+      return { combinedStr: '0 mos', rawSumStr: '0 mos', overlapStr: null, overlapCount: 0 };
+    }
+    
+    // Calculate unique/union months using month IDs (year * 12 + month)
+    const uniqueMonths = new Set<number>();
+    let totalRawMonths = 0;
+    
+    itemsToCalculate.forEach(item => {
+      const startID = item.parsedStart.getFullYear() * 12 + item.parsedStart.getMonth();
+      const endID = item.parsedEnd.getFullYear() * 12 + item.parsedEnd.getMonth();
+      for (let m = startID; m <= endID; m++) {
+        uniqueMonths.add(m);
+      }
+      totalRawMonths += item.durationMonths;
+    });
+    
+    const totalUniqueMonths = uniqueMonths.size;
+    const overlapCount = totalRawMonths - totalUniqueMonths;
+    
+    const getLabel = (total: number) => {
+      const yrs = Math.floor(total / 12);
+      const mos = total % 12;
+      const parts = [];
+      if (yrs > 0) parts.push(`${yrs} yr${yrs > 1 ? 's' : ''}`);
+      if (mos > 0) parts.push(`${mos} mo${mos > 1 ? 's' : ''}`);
+      return parts.length > 0 ? parts.join(' ') : '1 mo';
+    };
+    
+    return {
+      combinedStr: getLabel(totalUniqueMonths),
+      rawSumStr: getLabel(totalRawMonths),
+      overlapStr: overlapCount > 0 ? getLabel(overlapCount) : null,
+      overlapCount,
+    };
+  }, [parsedItems, selectedTech]);
+
   // Helper to format friendly period description
   const formatPeriodLabel = (start: Date, end: Date) => {
     const format = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -207,6 +250,62 @@ export const GanttChart: React.FC<GanttChartProps> = ({ experience }) => {
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* Dynamic Timeline Summary Stats Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
+        <div className="bg-[var(--bg-tertiary)] border border-[var(--border-color)]/70 p-3.5 rounded-xl text-left flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0">
+            <Clock className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[var(--text-secondary)] block">
+              Combined Experience
+            </span>
+            <span className="text-sm font-black font-display text-[var(--text-primary)] mt-0.5 block">
+              {combinedStats.combinedStr}
+            </span>
+            <span className="text-[9.5px] text-[var(--text-secondary)] mt-0.5 block leading-tight">
+              {selectedTech ? `For roles utilizing ${selectedTech}` : 'Total non-overlapping professional tenure'}
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-[var(--bg-tertiary)] border border-[var(--border-color)]/70 p-3.5 rounded-xl text-left flex items-start gap-3">
+          <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+            <Briefcase className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[var(--text-secondary)] block">
+              Tenure Raw Sum
+            </span>
+            <span className="text-sm font-black font-display text-[var(--text-primary)] mt-0.5 block">
+              {combinedStats.rawSumStr}
+            </span>
+            <span className="text-[9.5px] text-[var(--text-secondary)] mt-0.5 block leading-tight">
+              Cumulative aggregate sum of all listed role durations
+            </span>
+          </div>
+        </div>
+
+        <div className="bg-[var(--bg-tertiary)] border border-[var(--border-color)]/70 p-3.5 rounded-xl text-left flex items-start gap-3 sm:col-span-2 lg:col-span-1">
+          <div className="p-2 rounded-lg bg-amber-500/10 text-amber-500 border border-amber-500/20 shrink-0">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <div>
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-[var(--text-secondary)] block">
+              Overlapping Tenure
+            </span>
+            <span className="text-sm font-black font-display text-[var(--text-primary)] mt-0.5 block">
+              {combinedStats.overlapStr || 'No Overlaps'}
+            </span>
+            <span className="text-[9.5px] text-[var(--text-secondary)] mt-0.5 block leading-tight">
+              {combinedStats.overlapCount > 0 
+                ? 'Overlapping duration from concurrent projects resolved' 
+                : 'All projects executed strictly sequentially'}
+            </span>
+          </div>
         </div>
       </div>
 

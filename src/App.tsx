@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Briefcase, GraduationCap, Code, Layers, BookOpen, Mail, 
   Settings, Printer, ChevronLeft, ChevronRight, Github, Linkedin, ExternalLink, 
@@ -127,6 +127,70 @@ export default function App() {
     publications: portfolioData.visibility?.publications ?? true,
     contact: portfolioData.visibility?.contact ?? true,
   };
+
+  // Calculate actual union (combined non-overlapping) experience duration based on overlapped months
+  const combinedYearsOfExperience = useMemo(() => {
+    if (!portfolioData.experience || portfolioData.experience.length === 0) {
+      return '0 years';
+    }
+
+    const uniqueMonths = new Set<number>();
+    const currentEnd = new Date(2026, 5); // June 2026
+
+    portfolioData.experience.forEach(item => {
+      const startParts = item.startDate.split('-');
+      const startYear = parseInt(startParts[0], 10);
+      const startMonth = startParts[1] ? parseInt(startParts[1], 10) - 1 : 0;
+      
+      let endYear = currentEnd.getFullYear();
+      let endMonth = currentEnd.getMonth();
+      if (item.endDate && item.endDate.toLowerCase() !== 'present') {
+        const endParts = item.endDate.split('-');
+        endYear = parseInt(endParts[0], 10);
+        endMonth = endParts[1] ? parseInt(endParts[1], 10) - 1 : 11;
+      }
+      
+      const startID = startYear * 12 + startMonth;
+      const endID = endYear * 12 + endMonth;
+      for (let m = startID; m <= endID; m++) {
+        uniqueMonths.add(m);
+      }
+    });
+    
+    const totalMonths = uniqueMonths.size;
+    const yrs = Math.floor(totalMonths / 12);
+    const mos = totalMonths % 12;
+    
+    const parts = [];
+    if (yrs > 0) parts.push(`${yrs} yr${yrs > 1 ? 's' : ''}`);
+    if (mos > 0) parts.push(`${mos} mo${mos > 1 ? 's' : ''}`);
+    
+    return parts.length > 0 ? parts.join(' ') : '0 mos';
+  }, [portfolioData.experience]);
+
+  // Identify the latest educational achievement
+  const latestEducation = useMemo(() => {
+    if (!portfolioData.education || portfolioData.education.length === 0) {
+      return null;
+    }
+    
+    return [...portfolioData.education].sort((a, b) => {
+      const getYear = (dateStr: string) => {
+        if (!dateStr || dateStr.toLowerCase() === 'present') return 2026;
+        const parts = dateStr.split('-');
+        return parseInt(parts[0], 10) || 0;
+      };
+      
+      const aYr = getYear(a.endDate);
+      const bYr = getYear(b.endDate);
+      
+      if (aYr !== bYr) return bYr - aYr;
+      
+      const aStart = getYear(a.startDate);
+      const bStart = getYear(b.startDate);
+      return bStart - aStart;
+    })[0];
+  }, [portfolioData.education]);
 
   // 2. Theme Management State
   const [theme, setTheme] = useState<ThemePresetVal>(() => {
@@ -1700,8 +1764,52 @@ To support the server costs of AmiruLLM, please consider donating:
               </div>
             </div>
 
+            {/* Quick Stats Highlights */}
+            <div className="mt-6 pt-5 border-t border-[var(--border-color)]/70 flex flex-wrap gap-3 relative z-10">
+              <button 
+                onClick={() => document.getElementById('experience')?.scrollIntoView({ behavior: 'smooth' })}
+                title="Click to view Experience Timeline"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-sans text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-indigo-500/20 active:scale-95"
+              >
+                <Briefcase className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                <span>Combined Experience: <strong className="font-bold text-[var(--text-primary)]">{combinedYearsOfExperience}</strong></span>
+              </button>
+              {latestEducation && (
+                <button 
+                  onClick={() => document.getElementById('detailed-academics')?.scrollIntoView({ behavior: 'smooth' })}
+                  title={`Click to view Education details: ${latestEducation.degree}`}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-sans text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-emerald-500/20 active:scale-95"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate max-w-[320px] sm:max-w-none">
+                    Latest Education: <strong className="font-bold text-[var(--text-primary)]">{latestEducation.degree}</strong>
+                  </span>
+                </button>
+              )}
+              {portfolioData.projects && portfolioData.projects.length > 0 && (
+                <button 
+                  onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}
+                  title="Click to view Projects portfolio"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 font-sans text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-amber-500/20 active:scale-95"
+                >
+                  <Code className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>Total Projects: <strong className="font-bold text-[var(--text-primary)]">{portfolioData.projects.length}</strong></span>
+                </button>
+              )}
+              {portfolioData.publications && portfolioData.publications.length > 0 && (
+                <button 
+                  onClick={() => document.getElementById('detailed-publications')?.scrollIntoView({ behavior: 'smooth' })}
+                  title="Click to view Publications"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 font-sans text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-rose-500/20 active:scale-95"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <span>Publications: <strong className="font-bold text-[var(--text-primary)]">{portfolioData.publications.length}</strong></span>
+                </button>
+              )}
+            </div>
+
             {/* Long detail block */}
-            <div className="mt-6 pt-5 border-t border-[var(--border-color)]/70 relative z-10">
+            <div className="mt-5 pt-4 border-t border-[var(--border-color)]/30 relative z-10">
               <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-1">About Me / Story</span>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
                 {portfolioData.profile.aboutLong}
