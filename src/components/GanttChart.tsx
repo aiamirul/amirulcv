@@ -6,6 +6,7 @@
 import React, { useState, useMemo } from 'react';
 import { WorkExperience } from '../types';
 import { Calendar, Briefcase, Clock, Sparkles, Code, Info, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { CollapsibleText } from './CollapsibleText';
 
 interface GanttChartProps {
   experience: WorkExperience[];
@@ -198,7 +199,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ experience }) => {
   }
 
   return (
-    <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] overflow-hidden shadow-xl flex flex-col p-5 select-none w-full transition-all">
+    <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] overflow-hidden shadow-xl flex flex-col p-3.5 sm:p-5 select-none w-full transition-all">
       {/* Top Banner Control */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5 border-b border-[var(--border-color)] pb-4">
         <div>
@@ -309,6 +310,13 @@ export const GanttChart: React.FC<GanttChartProps> = ({ experience }) => {
         </div>
       </div>
 
+      {/* Mobile Scroll Indicator Helper */}
+      <div className="md:hidden flex items-center justify-center gap-1.5 text-[9.5px] font-mono text-[var(--text-secondary)] bg-[var(--bg-tertiary)]/75 border border-[var(--border-color)] px-3 py-2 rounded-lg mb-3 shadow-xs select-none">
+        <span className="animate-bounce">↔</span>
+        <span>Scroll / Swipe horizontally to explore full timeline</span>
+        <span className="animate-bounce">↔</span>
+      </div>
+
       {/* Timeline Stage Canvas */}
       <div className="relative border border-[var(--border-color)] rounded-xl bg-[var(--bg-primary)] p-5 pt-7 overflow-x-auto min-w-0 mb-6">
         <div className="min-w-[650px] relative pb-2 pt-10 select-none">
@@ -415,9 +423,12 @@ export const GanttChart: React.FC<GanttChartProps> = ({ experience }) => {
             </div>
           </div>
 
-          <p className="text-[11.5px] text-[var(--text-secondary)] leading-relaxed mb-4 font-normal bg-[var(--bg-primary)]/50 p-2.5 rounded-lg border border-[var(--border-color)]/30">
-            {selectedExpDetails.description}
-          </p>
+          <div className="bg-[var(--bg-primary)]/50 p-2.5 rounded-lg border border-[var(--border-color)]/30 mb-4">
+            <CollapsibleText 
+              text={selectedExpDetails.description} 
+              maxLength={220}
+            />
+          </div>
 
           {/* Key accomplishments checklist inside drilldown */}
           {selectedExpDetails.achievements && selectedExpDetails.achievements.length > 0 && (

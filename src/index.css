@@ -97,14 +97,21 @@
 .bento-card-base {
   background-color: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 1.75rem; /* custom super modern rounded-3xl */
-  padding: 1.5rem;
+  border-radius: 1rem; /* modern rounded-2xl on mobile */
+  padding: 0.875rem; /* smaller padding on mobile to maximize horizontal space */
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+@media (min-width: 640px) {
+  .bento-card-base {
+    border-radius: 1.75rem; /* beautiful super modern rounded-3xl on desktop */
+    padding: 1.5rem;
+  }
 }
 
 .bento-card-base:hover {

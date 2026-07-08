@@ -9,7 +9,8 @@ import {
   Settings, Printer, ChevronLeft, ChevronRight, Github, Linkedin, ExternalLink, 
   MapPin, Phone, Globe, Calendar, Clock, Send, MessageSquare, 
   CheckCircle, ArrowUpRight, ArrowLeft, Bookmark, X, RotateCw, RotateCcw,
-  FileText, Download, Sparkles, BarChart2, Maximize2, Activity, Terminal, ShieldAlert, Copy, Volume2, VolumeX
+  FileText, Download, Sparkles, BarChart2, Maximize2, Activity, Terminal, ShieldAlert, Copy, Volume2, VolumeX,
+  Menu
 } from 'lucide-react';
 import { PortfolioData, Project, BlogPost, SubmittedMessage, Publication } from './types';
 import { defaultPortfolioData } from './defaultData';
@@ -19,6 +20,8 @@ import { ResumePDF } from './components/ResumePDF';
 import { AiAssistantModal } from './components/AiAssistantModal';
 import { TokenStatsModal } from './components/TokenStatsModal';
 import { GanttChart } from './components/GanttChart';
+import { MermaidChart } from './components/MermaidChart';
+import { CollapsibleText } from './components/CollapsibleText';
 import { sortTimelineItems } from './utils/dateSorter';
 
 interface ParsedLog {
@@ -297,6 +300,7 @@ export default function App() {
   });
 
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [rawJsonText, setRawJsonText] = useState<string>('');
   const [jsonValidationError, setJsonValidationError] = useState<string | null>(null);
   const [jsonSaveSuccess, setJsonSaveSuccess] = useState<boolean>(false);
@@ -1614,17 +1618,19 @@ To support the server costs of AmiruLLM, please consider donating:
           </button>
 
           {/* Advanced Configuration Settings Cog (Opens Modes Console) */}
-          <button
-            onClick={() => setIsSettingsModalOpen(true)}
-            className="w-12 h-12 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-755 hover:scale-105 text-slate-100 hover:text-white shadow-xl flex items-center justify-center transition-all cursor-pointer relative group ring-2 ring-violet-500/20"
-            title="Advanced System Modes Settings Cog"
-            aria-label="Open system configuration modes modal panel"
-          >
-            <Settings className="w-5 h-5 animate-spin-slow text-violet-400" />
-            <span className="absolute -left-48 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
-              Advanced Settings Console (Cog)
-            </span>
-          </button>
+          {isDevMode && (
+            <button
+              onClick={() => setIsSettingsModalOpen(true)}
+              className="w-12 h-12 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-755 hover:scale-105 text-slate-100 hover:text-white shadow-xl flex items-center justify-center transition-all cursor-pointer relative group ring-2 ring-violet-500/20"
+              title="Advanced System Modes Settings Cog"
+              aria-label="Open system configuration modes modal panel"
+            >
+              <Settings className="w-5 h-5 animate-spin-slow text-violet-400" />
+              <span className="absolute -left-48 bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity duration-200 shadow-md">
+                Advanced Settings Console (Cog)
+              </span>
+            </button>
+          )}
 
           {isDevMode && (
             <button
@@ -1670,39 +1676,106 @@ To support the server costs of AmiruLLM, please consider donating:
               <a href="#blog" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Articles</a>
             )}
             {vis.contact && (
-              <a href="#contact" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text(--text-primary) tracking-wider cursor-pointer font-sans">Contact</a>
+              <a href="#contact" className="text-xs uppercase font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tracking-wider cursor-pointer font-sans">Contact</a>
             )}
           </nav>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Sparkles AI button */}
             <button
               onClick={() => setIsAiModalOpen(true)}
-              className="text-xs font-bold uppercase tracking-wider bg-purple-500/10 hover:bg-purple-600 hover:text-white text-purple-600 dark:text-purple-400 px-2.5 sm:px-3.5 py-1.5 rounded-lg border border-purple-500/20 transition-all cursor-pointer flex items-center gap-1 sm:gap-1.5 focus:ring-2 focus:ring-purple-500"
+              className="text-xs font-bold uppercase tracking-wider bg-purple-500/10 hover:bg-purple-600 hover:text-white text-purple-600 dark:text-purple-400 px-2 sm:px-3 py-1.5 rounded-lg border border-purple-500/20 transition-all cursor-pointer flex items-center gap-1 focus:ring-2 focus:ring-purple-500"
               title="Open Dynamic AI Interview & QA Assistant Room"
             >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span><span className="hidden sm:inline">Talk to my </span>AI Agent</span>
+              <Sparkles className="w-3 h-3 shrink-0" />
+              <span>Agent</span>
             </button>
 
             {/* Quick dashboard trigger (Dev Mode Only) */}
             {isDevMode && (
               <button
                 onClick={() => setIsCmsOpen(true)}
-                className="text-xs font-bold uppercase tracking-wider bg-[var(--accent-light)] hover:bg-[var(--accent-primary)] text-[var(--accent-primary)] hover:text-white px-3.5 py-1.5 rounded-lg border border-[var(--accent-primary)]/20 transition-all cursor-pointer flex items-center gap-1.5 focus:ring-2 focus:ring-[var(--accent-primary)]"
+                className="text-xs font-bold uppercase tracking-wider bg-[var(--accent-light)] hover:bg-[var(--accent-primary)] text-[var(--accent-primary)] hover:text-white px-2 sm:px-3 py-1.5 rounded-lg border border-[var(--accent-primary)]/20 transition-all cursor-pointer flex items-center gap-1 focus:ring-2 focus:ring-[var(--accent-primary)]"
               >
-                <Settings className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">CMS Panel</span>
+                <Settings className="w-3 h-3" />
+                <span className="hidden sm:inline">CMS</span>
               </button>
             )}
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-1.5 hover:bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-lg border border-[var(--border-color)] transition-colors cursor-pointer"
+              aria-label="Toggle Mobile Menu"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3 space-y-2 animate-fade-in font-sans">
+            <a 
+              href="#about" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block px-3 py-2 text-xs uppercase font-extrabold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg tracking-wider cursor-pointer"
+            >
+              Biography
+            </a>
+            {vis.experience && (
+              <a 
+                href="#experience" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block px-3 py-2 text-xs uppercase font-extrabold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg tracking-wider cursor-pointer"
+              >
+                Timeline
+              </a>
+            )}
+            {vis.projects && (
+              <a 
+                href="#projects" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block px-3 py-2 text-xs uppercase font-extrabold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg tracking-wider cursor-pointer"
+              >
+                Projects
+              </a>
+            )}
+            {vis.skills && (
+              <a 
+                href="#skills" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block px-3 py-2 text-xs uppercase font-extrabold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg tracking-wider cursor-pointer"
+              >
+                Competencies
+              </a>
+            )}
+            {vis.blogs && (
+              <a 
+                href="#blog" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block px-3 py-2 text-xs uppercase font-extrabold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg tracking-wider cursor-pointer"
+              >
+                Articles
+              </a>
+            )}
+            {vis.contact && (
+              <a 
+                href="#contact" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block px-3 py-2 text-xs uppercase font-extrabold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] rounded-lg tracking-wider cursor-pointer"
+              >
+                Contact
+              </a>
+            )}
+          </div>
+        )}
       </header>
 
       {/* ──────────────────────────────────────────────────────────────────
           Primary Main Page Body — Responsive Bento Grid Theme Layout
           ────────────────────────────────────────────────────────────────── */}
-      <main id="main-content" className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 no-print">
+      <main id="main-content" className="no-print">
 
         {/* Dynamic Schema Import State Info Drawer */}
         {importStatus.status !== 'idle' && (
@@ -1738,16 +1811,16 @@ To support the server costs of AmiruLLM, please consider donating:
         )}
 
         {/* Master Bento Grid Wrapper */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
           
           {/* CARD 1: Profile biography & Main Bio Display */}
-          <section id="about" className={`bento-card-base ${vis.callingCard ? 'lg:col-span-8' : 'lg:col-span-12'} flex flex-col justify-between min-h-[440px] relative overflow-hidden group`}>
+          <section id="about" className={`bento-card-base ${vis.callingCard ? 'lg:col-span-8' : 'lg:col-span-12'} flex flex-col justify-between md:min-h-[440px] min-h-0 relative overflow-hidden group`}>
             {/* Corner visual blur blob matching current accent */}
             <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-[var(--accent-primary)]/10 blur-3xl rounded-full pointer-events-none group-hover:bg-[var(--accent-primary)]/15 transition-all duration-500"></div>
             
-            <div className="z-10 flex flex-col md:flex-row gap-6 lg:gap-8 items-center md:items-start text-center md:text-left">
+            <div className="z-10 flex flex-col md:flex-row gap-4 sm:gap-6 lg:gap-8 items-center md:items-start text-center md:text-left">
               {/* Avatar frame */}
-              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl relative bg-[var(--bg-primary)] overflow-hidden shrink-0 border border-[var(--border-color)] shadow-md select-none">
+              <div className="w-24 h-24 sm:w-32 md:w-40 md:h-40 rounded-xl sm:rounded-2xl relative bg-[var(--bg-primary)] overflow-hidden shrink-0 border border-[var(--border-color)] shadow-md select-none">
                 <img 
                   src={portfolioData.profile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256'} 
                   alt={`${portfolioData.profile.name} Avatar`}
@@ -1757,43 +1830,43 @@ To support the server costs of AmiruLLM, please consider donating:
               </div>
 
               {/* Identity labels */}
-              <div className="flex-1 flex flex-col gap-2.5">
-                <span className="bento-pill max-w-max mx-auto md:mx-0">
+              <div className="flex-1 w-full max-w-full min-w-0 flex flex-col gap-1.5 sm:gap-2.5">
+                <span className="bento-pill max-w-full mx-auto md:mx-0 text-[10px] sm:text-xs whitespace-normal flex-wrap justify-center md:justify-start">
                   {portfolioData.profile.currentRole}
                 </span>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight font-display text-[var(--text-primary)]">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight font-display text-[var(--text-primary)]">
                   {portfolioData.profile.name}
                 </h1>
-                <p className="text-base font-semibold text-[var(--accent-primary)] leading-tight">
+                <p className="text-xs sm:text-sm md:text-base font-semibold text-[var(--accent-primary)] leading-tight">
                   {portfolioData.profile.title}
                 </p>
-                <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+                <p className="text-[11px] sm:text-xs md:text-sm text-[var(--text-secondary)] leading-relaxed">
                   {portfolioData.profile.aboutBrief}
                 </p>
 
                 {/* Locator metrics */}
-                <div className="flex flex-wrap justify-center md:justify-start gap-y-1.5 gap-x-4 text-xs text-[var(--text-secondary)] font-medium pt-1">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                    {portfolioData.profile.location}
+                <div className="flex flex-wrap justify-center md:justify-start gap-y-1.5 gap-x-3 sm:gap-x-4 text-[10px] sm:text-xs text-[var(--text-secondary)] font-medium pt-0.5 sm:pt-1 max-w-full">
+                  <span className="flex items-center gap-1 min-w-0 max-w-full">
+                    <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--accent-primary)] shrink-0" />
+                    <span className="truncate">{portfolioData.profile.location}</span>
                   </span>
                   <span className="hidden sm:inline text-[var(--border-color)]">|</span>
-                  <span className="flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                    {portfolioData.profile.email}
+                  <span className="flex items-center gap-1 min-w-0 max-w-full">
+                    <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--accent-primary)] shrink-0" />
+                    <span className="truncate">{portfolioData.profile.email}</span>
                   </span>
                   {portfolioData.profile.phone && (
                     <>
                       <span className="hidden sm:inline text-[var(--border-color)]">|</span>
-                      <span className="flex items-center gap-1.5">
-                        <Phone className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                        <span>{portfolioData.profile.phone}</span>
+                      <span className="flex items-center gap-1.5 min-w-0 max-w-full">
+                        <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--accent-primary)] shrink-0" />
+                        <span className="truncate">{portfolioData.profile.phone}</span>
                         <a
                           href={`https://wa.me/${portfolioData.profile.phone.replace(/\D/g, '')}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Chat on WhatsApp"
-                          className="inline-flex items-center justify-center p-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full transition-colors leading-none"
+                          className="inline-flex items-center justify-center p-0.5 sm:p-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full transition-colors leading-none shrink-0"
                         >
                           <svg className="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.455 5.703 1.458h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
@@ -1807,24 +1880,24 @@ To support the server costs of AmiruLLM, please consider donating:
             </div>
 
             {/* Quick Stats Highlights */}
-            <div className="mt-6 pt-5 border-t border-[var(--border-color)]/70 flex flex-wrap gap-3 relative z-10">
+            <div className="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-[var(--border-color)]/70 flex flex-wrap justify-center md:justify-start gap-2 sm:gap-3 relative z-10">
               <button 
                 onClick={() => document.getElementById('experience')?.scrollIntoView({ behavior: 'smooth' })}
                 title="Click to view Experience Timeline"
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-sans text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-indigo-500/20 active:scale-95"
+                className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 font-sans text-[10px] sm:text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-indigo-500/20 active:scale-95"
               >
-                <Briefcase className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                <span>Combined Experience: <strong className="font-bold text-[var(--text-primary)]">{combinedYearsOfExperience}</strong></span>
+                <Briefcase className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400 shrink-0" />
+                <span>Experience: <strong className="font-bold text-[var(--text-primary)]">{combinedYearsOfExperience}</strong></span>
               </button>
               {latestEducation && (
                 <button 
                   onClick={() => document.getElementById('detailed-academics')?.scrollIntoView({ behavior: 'smooth' })}
                   title={`Click to view Education details: ${latestEducation.degree}`}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-sans text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-emerald-500/20 active:scale-95"
+                  className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-sans text-[10px] sm:text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-emerald-500/20 active:scale-95"
                 >
-                  <GraduationCap className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span className="truncate max-w-[320px] sm:max-w-none">
-                    Latest Education: <strong className="font-bold text-[var(--text-primary)]">{latestEducation.degree}</strong>
+                  <GraduationCap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400 shrink-0" />
+                  <span className="truncate max-w-[200px] sm:max-w-none">
+                    Education: <strong className="font-bold text-[var(--text-primary)]">{latestEducation.degree}</strong>
                   </span>
                 </button>
               )}
@@ -1832,34 +1905,35 @@ To support the server costs of AmiruLLM, please consider donating:
                 <button 
                   onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })}
                   title="Click to view Projects portfolio"
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 font-sans text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-amber-500/20 active:scale-95"
+                  className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 font-sans text-[10px] sm:text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-amber-500/20 active:scale-95"
                 >
-                  <Code className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span>Total Projects: <strong className="font-bold text-[var(--text-primary)]">{portfolioData.projects.length}</strong></span>
+                  <Code className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 shrink-0" />
+                  <span>Projects: <strong className="font-bold text-[var(--text-primary)]">{portfolioData.projects.length}</strong></span>
                 </button>
               )}
               {portfolioData.publications && portfolioData.publications.length > 0 && (
                 <button 
                   onClick={() => document.getElementById('detailed-publications')?.scrollIntoView({ behavior: 'smooth' })}
                   title="Click to view Publications"
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 font-sans text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-rose-500/20 active:scale-95"
+                  className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 font-sans text-[10px] sm:text-xs font-semibold shadow-xs cursor-pointer select-none transition-all duration-200 hover:bg-rose-500/20 active:scale-95"
                 >
-                  <BookOpen className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                  <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-rose-400 shrink-0" />
                   <span>Publications: <strong className="font-bold text-[var(--text-primary)]">{portfolioData.publications.length}</strong></span>
                 </button>
               )}
             </div>
 
             {/* Long detail block */}
-            <div className="mt-5 pt-4 border-t border-[var(--border-color)]/30 relative z-10">
-              <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-1">About Me / Story</span>
-              <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">
-                {portfolioData.profile.aboutLong}
-              </p>
+            <div className="mt-4 sm:mt-5 pt-3 sm:pt-4 border-t border-[var(--border-color)]/30 relative z-10 w-full">
+              <span className="text-[9px] sm:text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block mb-1">About Me / Story</span>
+              <CollapsibleText 
+                text={portfolioData.profile.aboutLong} 
+                maxLength={220}
+              />
             </div>
 
             {/* Social action launchers */}
-            <div className="flex flex-wrap gap-2.5 mt-6 relative z-10">
+            <div className="flex flex-wrap justify-center md:justify-start gap-2.5 mt-6 relative z-10">
               <button
                 onClick={() => setIsResumeOpen(true)}
                 className="px-4.5 py-2.5 bg-[var(--accent-primary)] hover:bg-[var(--accent-hover)] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer focus:ring-2 focus:ring-[var(--accent-primary)]"
@@ -1906,7 +1980,7 @@ To support the server costs of AmiruLLM, please consider donating:
             <section className="bento-card-base lg:col-span-4 flex flex-col justify-between group relative overflow-hidden">
             <div className="space-y-1.5 z-10">
               <div className="flex justify-between items-center gap-1.5 flex-wrap">
-                <span className="bento-pill">Calling Card Preview</span>
+                <span className="bento-pill text-[9px] sm:text-xs">Calling Card</span>
                 
                 {/* Mode Selector Option tabs */}
                 <div className="flex bg-[var(--bg-primary)] border border-[var(--border-color)] p-0.5 rounded-lg select-none">
@@ -1935,8 +2009,8 @@ To support the server costs of AmiruLLM, please consider donating:
                 </div>
               </div>
               
-              <div className="flex justify-between items-baseline">
-                <h3 className="text-base font-bold font-display tracking-tight text-[var(--text-primary)]">Interactive Business Pass</h3>
+              <div className="flex justify-between items-baseline pt-0.5">
+                <h3 className="text-sm sm:text-base font-bold font-display tracking-tight text-[var(--text-primary)]">Interactive Pass</h3>
                 {cardViewMode === 'flip' && (
                   <button 
                     onClick={() => setCardSide(prev => prev === 'front' ? 'back' : 'front')}
@@ -1946,8 +2020,8 @@ To support the server costs of AmiruLLM, please consider donating:
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                A modern digital coordinate code card. Overridable QR and active coordinates connect scanning parties straight to secure ports.
+              <p className="text-[10px] sm:text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                Modern digital coordinate card. QR and active links connect straight to portfolio domains.
               </p>
             </div>
 
@@ -1955,19 +2029,19 @@ To support the server costs of AmiruLLM, please consider donating:
             {cardViewMode === 'flip' ? (
               /* Interactive Physical 3D Flip Card mockup container */
               <div 
-                className="my-5 relative w-full h-56 select-none perspective-1000 cursor-pointer"
+                className="my-3 sm:my-5 relative w-full h-48 sm:h-56 select-none perspective-1000 cursor-pointer"
                 onClick={() => setCardSide(prev => prev === 'front' ? 'back' : 'front')}
               >
                 <div className={`relative w-full h-full duration-500 transform-style-3d transition-transform ${cardSide === 'back' ? 'rotate-y-180' : ''}`}>
                   
                   {/* FRONT SIDE (Design focusing on identity and academic/education) */}
-                  <div className="absolute inset-0 w-full h-full backface-hidden rounded-2xl bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)] border border-[var(--border-color)] p-4 flex flex-col justify-between overflow-hidden shadow-md group-hover:border-[var(--accent-primary)]/60 transition-colors">
+                  <div className="absolute inset-0 w-full h-full backface-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)] border border-[var(--border-color)] p-3.5 sm:p-4 flex flex-col justify-between overflow-hidden shadow-md group-hover:border-[var(--accent-primary)]/60 transition-colors">
                     {/* Digital circuit vector backing lines */}
                     <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-[var(--accent-primary)]/10 blur-xl rounded-full pointer-events-none"></div>
                     
-                    <div className="flex gap-3.5 items-start">
+                    <div className="flex gap-2.5 sm:gap-3.5 items-start">
                       {/* Picture (Avatar) */}
-                      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-[var(--accent-primary)] bg-[var(--bg-primary)] shadow-sm shrink-0">
+                      <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 border-[var(--accent-primary)] bg-[var(--bg-primary)] shadow-sm shrink-0">
                         <img 
                           src={portfolioData.profile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256'} 
                           alt="Profile avatar" 
@@ -1977,76 +2051,76 @@ To support the server costs of AmiruLLM, please consider donating:
                       </div>
                       {/* Identification labels */}
                       <div className="space-y-0.5 overflow-hidden">
-                        <h4 className="font-display font-black text-sm text-[var(--text-primary)] tracking-wide uppercase truncate">
+                        <h4 className="font-display font-black text-xs sm:text-sm text-[var(--text-primary)] tracking-wide uppercase truncate">
                           {portfolioData.profile.name}
                         </h4>
-                        <p className="text-[10px] font-bold text-[var(--accent-primary)] uppercase tracking-wider truncate">
+                        <p className="text-[8px] sm:text-[10px] font-bold text-[var(--accent-primary)] uppercase tracking-wider truncate">
                           {portfolioData.profile.title}
                         </p>
-                        <p className="text-[9px] text-[var(--text-secondary)] font-semibold truncate">
+                        <p className="text-[8px] sm:text-[9px] text-[var(--text-secondary)] font-semibold truncate">
                           {portfolioData.profile.currentRole}
                         </p>
                       </div>
                     </div>
 
                     {/* Picture Education logs */}
-                    <div className="border-t border-[var(--border-color)]/50 pt-3 relative z-10 space-y-1">
-                      <p className="font-bold text-xs text-[var(--text-primary)] font-display">
+                    <div className="border-t border-[var(--border-color)]/50 pt-2 sm:pt-3 relative z-10 space-y-0.5 sm:space-y-1">
+                      <p className="font-bold text-[11px] sm:text-xs text-[var(--text-primary)] font-display">
                         Master in Computer Science
                       </p>
-                      <p className="text-[10px] text-[var(--accent-primary)] font-bold uppercase tracking-wider">
+                      <p className="text-[8px] sm:text-[10px] text-[var(--accent-primary)] font-bold uppercase tracking-wider">
                         {portfolioData.profile.title}
                       </p>
                     </div>
 
                     {/* Pass footer labels */}
-                    <div className="flex justify-between items-center text-[9px] font-mono text-[var(--text-secondary)] opacity-50 pt-1">
+                    <div className="flex justify-between items-center text-[8px] font-mono text-[var(--text-secondary)] opacity-50 pt-1">
                       <span>AMIRUL.CLOUD PASS</span>
                       <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
                         FRONT SIDE
                       </span>
                     </div>
                   </div>
 
                   {/* BACK SIDE (Design focusing on contact coordinates and QR) */}
-                  <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl bg-gradient-to-br from-[var(--bg-tertiary)] to-[var(--bg-secondary)] border border-[var(--border-color)] p-4 flex flex-col justify-between overflow-hidden shadow-md group-hover:border-[var(--accent-primary)]/60 transition-colors">
+                  <div className="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--bg-tertiary)] to-[var(--bg-secondary)] border border-[var(--border-color)] p-3.5 sm:p-4 flex flex-col justify-between overflow-hidden shadow-md group-hover:border-[var(--accent-primary)]/60 transition-colors">
                     <div className="absolute -left-6 -bottom-6 w-24 h-24 bg-[var(--accent-primary)]/10 blur-xl rounded-full pointer-events-none"></div>
 
-                    <div className="flex gap-3 items-center h-full">
+                    <div className="flex gap-2 sm:gap-3 items-center h-full">
                       {/* Contact Email & Phone */}
-                      <div className="flex-1 space-y-2.5 overflow-hidden">
+                      <div className="flex-1 min-w-0 space-y-1.5 sm:space-y-2.5 overflow-hidden">
                         <span className="block text-[8px] font-black uppercase tracking-widest text-[var(--text-secondary)] font-mono">
                           CONTACT
                         </span>
-                        <div className="space-y-1.5 text-[10px] text-[var(--text-primary)] font-semibold">
+                        <div className="space-y-1 sm:space-y-1.5 text-[9px] sm:text-[10px] text-[var(--text-primary)] font-semibold">
                           {/* Email */}
-                          <div className="flex items-center gap-1.5 truncate">
-                            <Mail className="w-3.5 h-3.5 text-[var(--accent-primary)] shrink-0" />
+                          <div className="flex items-center gap-1 sm:gap-1.5 truncate">
+                            <Mail className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--accent-primary)] shrink-0" />
                             <span className="truncate">{portfolioData.profile.email}</span>
                           </div>
                           {/* Phone */}
                           {portfolioData.profile.phone && (
-                            <div className="flex items-center gap-1.5 truncate">
-                              <Phone className="w-3.5 h-3.5 text-[var(--accent-primary)] shrink-0" />
+                            <div className="flex items-center gap-1 sm:gap-1.5 truncate">
+                              <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--accent-primary)] shrink-0" />
                               <span className="truncate">{portfolioData.profile.phone}</span>
                             </div>
                           )}
                           {/* Location */}
-                          <div className="flex items-center gap-1.5 truncate text-[9px] text-[var(--text-secondary)]">
-                            <MapPin className="w-3.5 h-3.5 text-[var(--accent-primary)] shrink-0" />
+                          <div className="flex items-center gap-1 sm:gap-1.5 truncate text-[8px] sm:text-[9px] text-[var(--text-secondary)]">
+                            <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[var(--accent-primary)] shrink-0" />
                             <span className="truncate">{portfolioData.profile.location}</span>
                           </div>
                         </div>
 
                         {/* Overridable Link description badge */}
-                        <span className="inline-block bg-[var(--accent-light)] text-[var(--accent-primary)] font-mono font-extrabold uppercase tracking-wider text-[8px] px-2 py-0.5 rounded">
+                        <span className="inline-block bg-[var(--accent-light)] text-[var(--accent-primary)] font-mono font-extrabold uppercase tracking-wider text-[7px] sm:text-[8px] px-1.5 sm:px-2 py-0.5 rounded">
                           {portfolioData.profile.qrOverrideContent ? "Custom Override" : "Website link"}
                         </span>
                       </div>
 
                       {/* QR Code */}
-                      <div className="w-24 h-24 bg-white p-1.5 rounded-xl border border-[var(--border-color)]/60 flex items-center justify-center shrink-0 relative shadow-sm group-hover:border-[var(--accent-primary)]/40 transition-colors">
+                      <div className="w-16 h-16 sm:w-24 sm:h-24 bg-white p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-[var(--border-color)]/60 flex items-center justify-center shrink-0 relative shadow-sm group-hover:border-[var(--accent-primary)]/40 transition-colors">
                         <img 
                           src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(portfolioData.profile.qrOverrideContent || portfolioData.profile.websiteUrl || currentUrl)}`} 
                           alt="Calling Card secure QR link" 
@@ -2057,10 +2131,10 @@ To support the server costs of AmiruLLM, please consider donating:
                     </div>
 
                     {/* Pass Back footer */}
-                    <div className="flex justify-between items-center text-[9px] font-mono text-[var(--text-secondary)] opacity-50 pt-2 border-t border-[var(--border-color)]/40">
+                    <div className="flex justify-between items-center text-[8px] font-mono text-[var(--text-secondary)] opacity-50 pt-1 sm:pt-2 border-t border-[var(--border-color)]/40">
                       <span>ENCODED COORDINATES</span>
                       <span className="flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full"></span>
+                        <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 bg-[var(--accent-primary)] rounded-full"></span>
                         BACK SIDE
                       </span>
                     </div>
@@ -2070,14 +2144,14 @@ To support the server costs of AmiruLLM, please consider donating:
               </div>
             ) : (
               /* All-in-One Flat single page list rendering (Both sides rendered simultaneously online) */
-              <div className="my-5 flex flex-col gap-4">
+              <div className="my-3 sm:my-5 flex flex-col gap-3 sm:gap-4">
                 
                 {/* FRONT RENDER VIEW */}
-                <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)] border border-[var(--border-color)] p-3.5 flex flex-col justify-between overflow-hidden shadow-sm hover:border-[var(--accent-primary)]/40 transition-colors">
+                <div className="relative w-full h-36 sm:h-44 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)] border border-[var(--border-color)] p-2.5 sm:p-3.5 flex flex-col justify-between overflow-hidden shadow-sm hover:border-[var(--accent-primary)]/40 transition-colors">
                   <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-[var(--accent-primary)]/10 blur-xl rounded-full pointer-events-none"></div>
                   
-                  <div className="flex gap-3.5 items-start">
-                    <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-[var(--accent-primary)] bg-[var(--bg-primary)] shadow-sm shrink-0 font-sans">
+                  <div className="flex gap-2.5 sm:gap-3.5 items-start">
+                    <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-[var(--accent-primary)] bg-[var(--bg-primary)] shadow-sm shrink-0 font-sans">
                       <img 
                         src={portfolioData.profile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256'} 
                         alt="Profile avatar" 
@@ -2086,24 +2160,24 @@ To support the server costs of AmiruLLM, please consider donating:
                       />
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
-                      <h4 className="font-display font-black text-xs sm:text-sm text-[var(--text-primary)] tracking-wide uppercase truncate">
+                      <h4 className="font-display font-black text-[10px] sm:text-xs md:text-sm text-[var(--text-primary)] tracking-wide uppercase truncate">
                         {portfolioData.profile.name}
                       </h4>
-                      <p className="text-[9px] font-bold text-[var(--accent-primary)] uppercase tracking-wider truncate">
+                      <p className="text-[8px] sm:text-[9px] font-bold text-[var(--accent-primary)] uppercase tracking-wider truncate">
                         {portfolioData.profile.title}
                       </p>
-                      <p className="text-[8px] text-[var(--text-secondary)] font-semibold truncate">
+                      <p className="text-[7px] sm:text-[8px] text-[var(--text-secondary)] font-semibold truncate">
                         {portfolioData.profile.currentRole}
                       </p>
                     </div>
                   </div>
 
                   {/* Picture Academic logs */}
-                  <div className="border-t border-[var(--border-color)]/50 pt-2.5 space-y-1">
-                    <p className="font-bold text-xs text-[var(--text-primary)] font-display">
+                  <div className="border-t border-[var(--border-color)]/50 pt-2 sm:pt-2.5 space-y-0.5 sm:space-y-1">
+                    <p className="font-bold text-[10px] sm:text-xs text-[var(--text-primary)] font-display">
                       Master in Computer Science
                     </p>
-                    <p className="text-[9px] text-[var(--accent-primary)] font-bold uppercase tracking-wider">
+                    <p className="text-[8px] sm:text-[9px] text-[var(--accent-primary)] font-bold uppercase tracking-wider">
                       {portfolioData.profile.title}
                     </p>
                   </div>
@@ -2119,43 +2193,43 @@ To support the server costs of AmiruLLM, please consider donating:
                 </div>
 
                 {/* BACK RENDER VIEW */}
-                <div className="relative w-full h-44 rounded-2xl bg-gradient-to-br from-[var(--bg-tertiary)] to-[var(--bg-secondary)] border border-[var(--border-color)] p-3.5 flex flex-col justify-between overflow-hidden shadow-sm hover:border-[var(--accent-primary)]/40 transition-colors">
+                <div className="relative w-full h-36 sm:h-44 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[var(--bg-tertiary)] to-[var(--bg-secondary)] border border-[var(--border-color)] p-2.5 sm:p-3.5 flex flex-col justify-between overflow-hidden shadow-sm hover:border-[var(--accent-primary)]/40 transition-colors">
                   <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-[var(--accent-primary)]/10 blur-xl rounded-full pointer-events-none"></div>
 
-                  <div className="flex gap-2.5 items-center h-full">
+                  <div className="flex gap-2 items-center h-full">
                     {/* Contact Email & Phone */}
-                    <div className="flex-1 space-y-1.5 overflow-hidden">
+                    <div className="flex-1 min-w-0 space-y-1 sm:space-y-1.5 overflow-hidden">
                       <span className="block text-[8px] font-black uppercase tracking-widest text-[var(--text-secondary)] font-mono pb-0.5">
                         CONTACT
                       </span>
-                      <div className="space-y-1 text-[9px] font-semibold text-[var(--text-primary)]">
+                      <div className="space-y-0.5 sm:space-y-1 text-[8px] sm:text-[9px] font-semibold text-[var(--text-primary)]">
                         {/* Email */}
                         <div className="flex items-center gap-1 truncate">
-                          <Mail className="w-3 h-3 text-[var(--accent-primary)] shrink-0" />
+                          <Mail className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[var(--accent-primary)] shrink-0" />
                           <span className="truncate">{portfolioData.profile.email}</span>
                         </div>
                         {/* Phone */}
                         {portfolioData.profile.phone && (
                           <div className="flex items-center gap-1 truncate">
-                            <Phone className="w-3 h-3 text-[var(--accent-primary)] shrink-0" />
+                            <Phone className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[var(--accent-primary)] shrink-0" />
                             <span className="truncate">{portfolioData.profile.phone}</span>
                           </div>
                         )}
                         {/* Location */}
                         <div className="flex items-center gap-1 truncate text-[8px] text-[var(--text-secondary)]">
-                          <MapPin className="w-3 h-3 text-[var(--accent-primary)] shrink-0" />
+                          <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[var(--accent-primary)] shrink-0" />
                           <span className="truncate">{portfolioData.profile.location}</span>
                         </div>
                       </div>
 
                       {/* Overridable Link description badge */}
-                      <span className="inline-block bg-[var(--accent-light)] text-[var(--accent-primary)] font-mono font-extrabold uppercase tracking-wider text-[7px] px-1.5 py-0.5 rounded mt-3">
+                      <span className="inline-block bg-[var(--accent-light)] text-[var(--accent-primary)] font-mono font-extrabold uppercase tracking-wider text-[6px] sm:text-[7px] px-1.5 py-0.5 rounded mt-2">
                         {portfolioData.profile.qrOverrideContent ? "Custom Override" : "Website link"}
                       </span>
                     </div>
 
                     {/* QR Code */}
-                    <div className="w-20 h-20 bg-white p-1 rounded-xl border border-[var(--border-color)]/60 flex items-center justify-center shrink-0 relative shadow-sm">
+                    <div className="w-14 h-14 sm:w-20 sm:h-20 bg-white p-1 rounded-lg sm:rounded-xl border border-[var(--border-color)]/60 flex items-center justify-center shrink-0 relative shadow-sm">
                       <img 
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=85x85&data=${encodeURIComponent(portfolioData.profile.qrOverrideContent || portfolioData.profile.websiteUrl || currentUrl)}`} 
                         alt="Calling Card secure QR link" 
@@ -2166,7 +2240,7 @@ To support the server costs of AmiruLLM, please consider donating:
                   </div>
 
                   {/* Pass Back footer */}
-                  <div className="flex justify-between items-center text-[8px] font-mono text-[var(--text-secondary)] opacity-50 pt-1.5 border-t border-[var(--border-color)]/40">
+                  <div className="flex justify-between items-center text-[8px] font-mono text-[var(--text-secondary)] opacity-50 pt-1 sm:pt-1.5 border-t border-[var(--border-color)]/40">
                     <span>ENCODED COORDINATES</span>
                     <span className="flex items-center gap-1">
                       <span className="w-1.5 h-1.5 bg-[var(--accent-primary)] rounded-full"></span>
@@ -2188,36 +2262,36 @@ To support the server costs of AmiruLLM, please consider donating:
           )}
 
           {vis.experience && (
-            <section id="experience" className={`bento-card-base ${vis.skills ? 'lg:col-span-8' : 'lg:col-span-12'} flex flex-col justify-between group min-h-[460px] relative overflow-hidden`}>
+            <section id="experience" className={`bento-card-base ${vis.skills ? 'lg:col-span-8' : 'lg:col-span-12'} flex flex-col justify-between group md:min-h-[460px] min-h-0 relative overflow-hidden`}>
               <div className="absolute -left-12 -top-12 w-64 h-64 bg-[var(--accent-primary)]/5 blur-3xl rounded-full pointer-events-none"></div>
               
               <div className="z-10 space-y-4">
                 <div className="flex items-center justify-between gap-4 border-b border-[var(--border-color)]/30 pb-3">
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
-                    <h3 className="text-base font-bold uppercase tracking-wider font-display">Employment History</h3>
+                  <div className="flex items-center gap-1.5">
+                    <Briefcase className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[var(--accent-primary)]" />
+                    <h3 className="text-sm sm:text-base font-bold uppercase tracking-wider font-display">Employment History</h3>
                   </div>
                   {portfolioData.experience.length > 0 && (
                     <div className="flex bg-[var(--bg-tertiary)] p-0.5 rounded-lg border border-[var(--border-color)] select-none shrink-0">
                       <button
                         onClick={() => setShowBentoGantt(false)}
-                        className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-md transition-all cursor-pointer ${
+                        className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-bold font-sans rounded-md transition-all cursor-pointer ${
                           !showBentoGantt
                             ? 'bg-[var(--accent-primary)] text-white shadow-sm'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                       >
-                        Timeline List
+                        Timeline
                       </button>
                       <button
                         onClick={() => setShowBentoGantt(true)}
-                        className={`px-2.5 py-1 text-[10px] font-bold font-sans rounded-md transition-all cursor-pointer ${
+                        className={`px-2 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-[10px] font-bold font-sans rounded-md transition-all cursor-pointer ${
                           showBentoGantt
                             ? 'bg-[var(--accent-primary)] text-white shadow-sm'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                       >
-                        Gantt Chart
+                        Gantt
                       </button>
                     </div>
                   )}
@@ -2228,34 +2302,37 @@ To support the server costs of AmiruLLM, please consider donating:
                     Employment Chronicles is currently empty. Open CMS system.
                   </p>
                 ) : showBentoGantt ? (
-                  <div className="animate-fade-in py-1">
+                  <div className="animate-fade-in py-1 max-w-full overflow-hidden">
                     <GanttChart experience={portfolioData.experience} />
                   </div>
                 ) : (
-                  <div className="relative border-l border-[var(--border-color)] pl-4.5 space-y-6 max-h-[300px] overflow-y-auto pr-1">
+                  <div className="relative border-l border-[var(--border-color)] pl-3.5 sm:pl-4.5 space-y-5 max-h-[300px] overflow-y-auto pr-1">
                     {portfolioData.experience.map((exp) => (
                       <div key={exp.id} className="relative text-xs">
                         {/* Node circle */}
-                        <span className="absolute -left-[23px] top-1 w-2 h-2 rounded-full bg-[var(--bg-primary)] border border-[var(--accent-primary)] inline-block" />
+                        <span className="absolute -left-[19px] sm:-left-[23px] top-1 w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[var(--bg-primary)] border border-[var(--accent-primary)] inline-block" />
                         
-                        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-baseline gap-1 mb-1.5">
-                          <h4 className="font-bold text-sm text-[var(--text-primary)]">
+                        <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-baseline gap-1 mb-1 sm:mb-1.5">
+                          <h4 className="font-bold text-xs sm:text-sm text-[var(--text-primary)]">
                             {exp.role} <span className="text-[var(--accent-primary)]">@ {exp.company}</span>
                           </h4>
-                          <span className="text-[10px] font-mono font-bold bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] px-2 py-0.5 rounded">
+                          <span className="text-[8px] sm:text-[10px] font-mono font-bold bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] px-1.5 sm:px-2 py-0.5 rounded shrink-0">
                             {exp.startDate} – {exp.endDate}
                           </span>
                         </div>
                         
-                        <p className="text-[11px] text-[var(--text-secondary)] font-medium italic -mt-0.5 mb-1.5">{exp.location}</p>
+                        <p className="text-[10px] sm:text-[11px] text-[var(--text-secondary)] font-medium italic -mt-0.5 mb-1">{exp.location}</p>
                         
-                        <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-2">
-                          {exp.description}
-                        </p>
+                        <div className="mb-2">
+                          <CollapsibleText 
+                            text={exp.description} 
+                            maxLength={140}
+                          />
+                        </div>
 
                         <div className="flex flex-wrap gap-1 select-none">
                           {exp.techUsed.map((tech) => (
-                            <span key={tech} className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] font-mono text-[9px] px-1.5 py-0.5 rounded font-bold">
+                            <span key={tech} className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)] font-mono text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.5 rounded font-bold">
                               {tech}
                             </span>
                           ))}
@@ -2266,7 +2343,7 @@ To support the server costs of AmiruLLM, please consider donating:
                 )}
               </div>
 
-              <a href="#detailed-chronicles" className="mt-4 text-xs font-bold text-[var(--accent-primary)] hover:translate-x-1 duration-200 transition-transform flex items-center gap-1">
+              <a href="#detailed-chronicles" className="mt-3 text-xs font-bold text-[var(--accent-primary)] hover:translate-x-1 duration-200 transition-transform flex items-center gap-1">
                 Check Achievements & Metrics →
               </a>
             </section>
@@ -2323,21 +2400,21 @@ To support the server costs of AmiruLLM, please consider donating:
           )}
 
           {vis.projects && (
-            <section id="projects" className="lg:col-span-12 flex flex-col gap-4 scroll-mt-6">
+            <section id="projects" className="lg:col-span-12 flex flex-col gap-3.5 sm:gap-4 scroll-mt-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 px-1">
               <div>
                 <div className="flex items-center gap-1.5 mb-1 bg-transparent">
-                  <Code className="w-4.5 h-4.5 text-[var(--accent-primary)]" />
-                  <h3 className="text-lg font-extrabold uppercase tracking-wider font-display">Projects</h3>
+                  <Code className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-[var(--accent-primary)]" />
+                  <h3 className="text-base sm:text-lg font-extrabold uppercase tracking-wider font-display">Projects</h3>
                 </div>
-                <p className="text-xs text-[var(--text-secondary)]">Click on any project to review comprehensive architectural details, screenshots, and live parameters.</p>
+                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]">Click on any project to review comprehensive architectural details, screenshots, and live parameters.</p>
               </div>
-
+ 
               {/* Filtering Controls */}
               <div className="flex flex-wrap gap-1 select-none">
                 <button
                   onClick={() => setActiveProjectFilter('all')}
-                  className={`text-[10px] px-3 py-1.5 rounded-lg border font-bold transition-all ${
+                  className={`text-[9px] sm:text-[10px] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border font-bold transition-all ${
                     activeProjectFilter === 'all'
                       ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white shadow-sm'
                       : 'bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--text-primary)]'
@@ -2349,7 +2426,7 @@ To support the server costs of AmiruLLM, please consider donating:
                   <button
                     key={tag}
                     onClick={() => setActiveProjectFilter(tag)}
-                    className={`text-[10px] px-3 py-1.5 rounded-lg border font-mono transition-all ${
+                    className={`text-[9px] sm:text-[10px] px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg border font-mono transition-all ${
                       activeProjectFilter === tag
                         ? 'bg-[var(--accent-primary)] border-[var(--accent-primary)] text-white shadow-sm'
                         : 'bg-[var(--bg-secondary)] border-[var(--border-color)] text-[var(--text-secondary)] hover:border-[var(--text-primary)]'
@@ -2360,22 +2437,22 @@ To support the server costs of AmiruLLM, please consider donating:
                 ))}
               </div>
             </div>
-
+ 
             {filteredProjects.length === 0 ? (
               <div className="p-12 text-center bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)]">
                 <p className="text-xs text-[var(--text-secondary)]">Empty results matching this tag filter.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredProjects.map((p) => (
                   <article 
                     key={p.id}
                     onClick={() => setSelectedProject(p)}
-                    className="bento-card-base hover:border-[var(--accent-primary)] cursor-pointer group flex flex-col justify-between"
+                    className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-xs hover:border-[var(--accent-primary)] cursor-pointer group flex flex-col justify-between transition-colors"
                   >
                     <div>
                       {/* Thumbnail mockup frame */}
-                      <div className="relative aspect-video rounded-xl overflow-hidden mb-4 border border-[var(--border-color)]">
+                      <div className="relative aspect-video rounded-lg sm:rounded-xl overflow-hidden mb-3 border border-[var(--border-color)]">
                         <img 
                           src={p.coverImage} 
                           alt={p.title} 
@@ -2388,24 +2465,24 @@ To support the server costs of AmiruLLM, please consider donating:
                           </span>
                         )}
                       </div>
-
-                      <h4 className="font-display font-bold text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors leading-tight mb-2">
+ 
+                      <h4 className="font-display font-bold text-[13px] sm:text-sm text-[var(--text-primary)] group-hover:text-[var(--accent-primary)] transition-colors leading-tight mb-1.5">
                         {p.title}
                       </h4>
-                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2 h-8 mb-4">
+                      <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed line-clamp-2 h-8 mb-3">
                         {p.briefDescription}
                       </p>
                     </div>
-
-                    <div className="space-y-3 mt-auto">
+ 
+                    <div className="space-y-2.5 mt-auto">
                       <div className="flex flex-wrap gap-1 select-none">
                         {p.tags.slice(0, 3).map((tg) => (
-                          <span key={tg} className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)]">
+                          <span key={tg} className="text-[8px] sm:text-[9px] font-mono px-1.5 py-0.5 rounded bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-secondary)]">
                             {tg}
                           </span>
                         ))}
                       </div>
-                      <span className="text-[10px] text-[var(--accent-primary)] font-bold flex items-center gap-0.5">
+                      <span className="text-[9px] sm:text-[10px] text-[var(--accent-primary)] font-bold flex items-center gap-0.5">
                         Read Analytics Specs <ChevronRight className="w-3.5 h-3.5" />
                       </span>
                     </div>
@@ -2613,34 +2690,39 @@ To support the server costs of AmiruLLM, please consider donating:
             {portfolioData.experience.length === 0 ? (
               <p className="text-xs text-[var(--text-secondary)] italic">No historical timeline items provided. Open CMS.</p>
             ) : showDetailedGantt ? (
-              <div className="animate-fade-in">
+              <div className="animate-fade-in max-w-full overflow-hidden">
                 <GanttChart experience={portfolioData.experience} />
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 animate-fade-in">
                 {portfolioData.experience.map((exp) => (
-                  <div key={exp.id} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-6 rounded-2xl flex flex-col justify-between">
+                  <div key={exp.id} className="bg-[var(--bg-secondary)] border border-[var(--border-color)] p-4 sm:p-6 rounded-xl sm:rounded-2xl flex flex-col justify-between shadow-xs">
                     <div>
                       <div className="flex justify-between items-start gap-2 mb-2">
-                        <span className="font-semibold text-xs text-[var(--accent-primary)] tracking-wide font-mono uppercase">
+                        <span className="font-semibold text-[10px] sm:text-xs text-[var(--accent-primary)] tracking-wide font-mono uppercase">
                           {exp.startDate} - {exp.endDate}
                         </span>
-                        <span className="text-[10px] bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-secondary)] font-bold font-mono px-2 py-0.5 rounded">
+                        <span className="text-[9px] sm:text-[10px] bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-secondary)] font-bold font-mono px-1.5 sm:px-2 py-0.5 rounded">
                           {exp.location}
                         </span>
                       </div>
-                      <h4 className="font-display font-extrabold text-base text-[var(--text-primary)] leading-tight mb-1">
+                      <h4 className="font-display font-extrabold text-sm sm:text-base text-[var(--text-primary)] leading-tight mb-0.5">
                         {exp.role}
                       </h4>
-                      <h5 className="font-semibold text-xs text-[var(--text-secondary)] mb-4 font-sans">{exp.company}</h5>
-                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed mb-4">{exp.description}</p>
+                      <h5 className="font-semibold text-[11px] sm:text-xs text-[var(--text-secondary)] mb-3 font-sans">{exp.company}</h5>
+                      <div className="mb-3">
+                        <CollapsibleText 
+                          text={exp.description} 
+                          maxLength={220}
+                        />
+                      </div>
                       
                       {exp.achievements && exp.achievements.length > 0 && (
                         <div className="space-y-1">
-                          <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">Core Contributions:</span>
-                          <ul className="list-disc list-inside space-y-1 text-xs text-[var(--text-secondary)]">
+                          <span className="text-[8px] sm:text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider block">Core Contributions:</span>
+                          <ul className="list-disc list-inside space-y-0.5 sm:space-y-1 text-[11px] sm:text-xs text-[var(--text-secondary)]">
                             {exp.achievements.map((ach, idx) => (
-                              <li key={idx} className="leading-snug pl-1.5"><span className="font-sans text-[var(--text-secondary)]">{ach}</span></li>
+                              <li key={idx} className="leading-snug pl-1"><span className="font-sans text-[var(--text-secondary)]">{ach}</span></li>
                             ))}
                           </ul>
                         </div>
@@ -2944,10 +3026,10 @@ To support the server costs of AmiruLLM, please consider donating:
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedProject(null); }}
           className="fixed inset-0 z-50 overflow-hidden bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 no-print animate-fade-in cursor-pointer"
         >
-          <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] w-full max-w-[94vw] lg:max-w-7xl rounded-3xl overflow-hidden shadow-2xl relative flex flex-col md:flex-row h-[85vh] md:h-[80vh] max-h-[90vh] animate-scale-up cursor-default">
+          <div className="bg-[var(--bg-secondary)] text-[var(--text-primary)] border border-[var(--border-color)] w-full max-w-full lg:max-w-7xl rounded-3xl overflow-y-auto md:overflow-hidden shadow-2xl relative flex flex-col md:flex-row h-auto max-h-[90vh] md:h-[80vh] animate-scale-up cursor-default">
             
             {/* Left Part: 50% width dynamic media slider / carousel */}
-            <div className="relative w-full md:w-1/2 bg-[var(--bg-tertiary)] border-b md:border-b-0 md:border-r border-[var(--border-color)] flex flex-col justify-center min-h-[220px] sm:min-h-[280px] md:min-h-0 h-1/3 md:h-full select-none">
+            <div className="relative w-full md:w-1/2 bg-[var(--bg-tertiary)] border-b md:border-b-0 md:border-r border-[var(--border-color)] flex flex-col justify-center h-auto min-h-[220px] sm:min-h-[280px] md:min-h-0 md:h-full select-none shrink-0">
               {(() => {
                 const carouselImages = [
                   selectedProject.coverImage,
@@ -3063,7 +3145,7 @@ To support the server costs of AmiruLLM, please consider donating:
             </div>
 
             {/* Right Part: 50% width scrollable details */}
-            <div className="w-full md:w-1/2 flex flex-col h-2/3 md:h-full overflow-hidden relative">
+            <div className="w-full md:w-1/2 flex flex-col h-auto md:h-full md:overflow-hidden relative shrink-0">
               {/* Close Button for desktop layout inside details */}
               <button 
                 onClick={() => setSelectedProject(null)}
@@ -3073,7 +3155,7 @@ To support the server costs of AmiruLLM, please consider donating:
                 <X className="w-4 h-4" />
               </button>
 
-              <div className="p-6 md:p-8 space-y-6 overflow-y-auto flex-1 pr-4 scrollbar-thin">
+              <div className="p-6 md:p-8 space-y-6 md:overflow-y-auto flex-1 md:pr-4 scrollbar-thin">
                 <div>
                   <span className="text-[10px] font-mono tracking-wider font-extrabold uppercase bg-[var(--accent-light)] text-[var(--accent-primary)] px-2.5 py-1 rounded inline-block mb-3 select-none animate-pulse">
                     Portfolio Documentation
@@ -3155,6 +3237,15 @@ To support the server costs of AmiruLLM, please consider donating:
                     );
                   })()}
                 </div>
+
+                {selectedProject.mermaid_chart && (
+                  <div>
+                    <h4 className="text-xs uppercase font-extrabold tracking-widest text-[var(--text-secondary)] border-b border-[var(--border-color)] pb-1 mb-2.5">
+                      Architecture & Flow Diagram
+                    </h4>
+                    <MermaidChart chart={selectedProject.mermaid_chart} />
+                  </div>
+                )}
 
                 <div>
                   <h4 className="text-xs uppercase font-extrabold tracking-widest text-[var(--text-secondary)] mb-2">
@@ -3358,7 +3449,7 @@ To support the server costs of AmiruLLM, please consider donating:
       {isChatOpen && (
         <div 
           id="amirullm-chat-dialog" 
-          className="fixed bottom-22 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[380px] md:w-[410px] h-[75vh] sm:h-[520px] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 animate-scale-up no-print transition-all duration-300"
+          className="fixed bottom-22 left-4 right-4 sm:left-auto sm:right-6 sm:w-[380px] md:w-[410px] h-[75vh] sm:h-[520px] bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-2xl shadow-2xl flex flex-col overflow-hidden z-50 animate-scale-up no-print transition-all duration-300"
         >
           {/* Header */}
           <div className="bg-gradient-to-r from-indigo-650 via-indigo-700 to-purple-800 text-white p-4 flex justify-between items-center shadow-md">
@@ -3906,7 +3997,7 @@ To support the server costs of AmiruLLM, please consider donating:
       )}
 
       {/* ADVANCED CONFIGURATION SYSTEM MODES PANEL OVERLAY */}
-      {isSettingsModalOpen && (
+      {isSettingsModalOpen && isDevMode && (
         <div 
           className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 no-print select-none"
           onClick={() => setIsSettingsModalOpen(false)}

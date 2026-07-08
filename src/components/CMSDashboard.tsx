@@ -255,7 +255,8 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
       tags: ['TypeScript', 'Vite', 'React'],
       githubLink: 'https://github.com',
       liveLink: 'https://example.com',
-      featured: false
+      featured: false,
+      mermaid_chart: ''
     };
     setProjects([newProj, ...projects]);
   };
@@ -1328,6 +1329,17 @@ export const CMSDashboard: React.FC<CMSDashboardProps> = ({
                           onChange={(e) => handleUpdateProject(proj.id, 'longDescription', e.target.value)}
                           rows={4}
                           className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-700 uppercase mb-0.5">Mermaid Flowchart / Diagram (Optional, code format)</label>
+                        <textarea 
+                          value={proj.mermaid_chart || ''} 
+                          onChange={(e) => handleUpdateProject(proj.id, 'mermaid_chart', e.target.value)}
+                          rows={5}
+                          placeholder="e.g.&#10;graph TD&#10;  A[Start] --> B(Process)&#10;  B --> C{Decision}&#10;  C -->|Yes| D[Success]&#10;  C -->|No| E[Fail]"
+                          className="w-full px-3 py-1.5 border border-slate-200 rounded text-xs font-mono bg-slate-50 text-slate-800"
                         />
                       </div>
                     </div>

@@ -35,7 +35,7 @@ export const ResumePDF: React.FC<ResumePreviewProps> = ({
   return (
     <div 
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      className="min-height-screen bg-slate-900/60 backdrop-blur-sm fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-10 flex flex-col items-center no-print animate-fade-in font-sans cursor-pointer"
+      className="min-h-screen bg-slate-900/60 backdrop-blur-sm fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-10 flex flex-col items-center no-print animate-fade-in font-sans cursor-pointer"
     >
       {/* Control Bar - Not Shown on Print */}
       <div className="w-full max-w-4xl bg-slate-800 text-white rounded-t-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4 shadow-2xl border-b border-slate-700 cursor-default">
@@ -115,7 +115,7 @@ export const ResumePDF: React.FC<ResumePreviewProps> = ({
       {/* The Printable Page Sheet */}
       <div 
         id="resume-sheet"
-        className="w-full max-w-4xl bg-white text-black p-6 sm:p-10 md:p-12 shadow-2xl rounded-b-xl flex flex-col gap-6 font-sans leading-relaxed text-sm ring-1 ring-slate-200 overflow-hidden cursor-default"
+        className="w-full max-w-4xl bg-white text-black p-4 sm:p-10 md:p-12 shadow-2xl rounded-b-xl flex flex-col gap-6 font-sans leading-relaxed text-sm ring-1 ring-slate-200 overflow-hidden cursor-default"
         style={{ color: '#1a1a1a', background: '#fafafb' }}
       >
         {printMode === 'plain' ? (
@@ -358,17 +358,17 @@ export const ResumePDF: React.FC<ResumePreviewProps> = ({
               </div>
 
               {/* QR Code and Callout for printed version */}
-              <div className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm shrink-0">
-                <div className="flex flex-col text-right">
+              <div className="flex items-center justify-between md:justify-start gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm shrink-0 w-full md:w-auto mt-4 md:mt-0">
+                <div className="flex flex-col text-left md:text-right">
                   <span className="text-[10px] font-bold text-slate-800 uppercase tracking-wider leading-none">Callback Code</span>
-                  <span className="text-[9px] text-slate-500 max-w-[100px] leading-tight mt-1">
+                  <span className="text-[9px] text-slate-500 max-w-[150px] md:max-w-[100px] leading-tight mt-1">
                     Scan to explore live demo, blogs, & switch themes online.
                   </span>
                 </div>
                 <img 
                   src={qrCodeUrl} 
                   alt="Scan QR back to website" 
-                  className="w-16 h-16 border border-slate-100 rounded"
+                  className="w-16 h-16 border border-slate-100 rounded shrink-0"
                   referrerPolicy="no-referrer"
                 />
               </div>

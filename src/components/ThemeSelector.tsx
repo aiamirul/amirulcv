@@ -80,7 +80,7 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ currentTheme, onTh
   };
 
   return (
-    <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] p-6 shadow-xl transition-all duration-300">
+    <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] p-4 sm:p-6 shadow-xl transition-all duration-300">
       <div className="flex items-center gap-2 mb-4">
         <Palette className="w-5 h-5 text-[var(--accent-primary)] animate-pulse" />
         <h3 className="text-lg font-bold tracking-tight">Dynamic Aesthetic Templates</h3>
@@ -150,15 +150,15 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({ currentTheme, onTh
         })}
       </div>
 
-      <div className="mt-4 flex justify-between items-center text-[11px] text-[var(--text-secondary)] border-t border-[var(--border-color)] pt-3">
-        <span>* Theme parameter can be appended to any URL share as <code className="font-mono bg-[var(--bg-tertiary)] px-1 py-0.5 rounded">?theme=neo_tokyo</code></span>
+      <div className="mt-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-[11px] text-[var(--text-secondary)] border-t border-[var(--border-color)] pt-3 w-full">
+        <span className="leading-normal">* Theme parameter can be appended to any URL share as <code className="font-mono bg-[var(--bg-tertiary)] px-1 py-0.5 rounded">?theme=neo_tokyo</code></span>
         <button
           onClick={() => {
             // Remove GET parameter safely
             const baseUrl = window.location.origin + window.location.pathname;
             window.location.href = baseUrl;
           }}
-          className="flex items-center gap-1 hover:text-[var(--accent-primary)] transition-colors cursor-pointer"
+          className="flex items-center gap-1 hover:text-[var(--accent-primary)] transition-colors cursor-pointer shrink-0"
         >
           <RotateCcw className="w-3 h-3" /> Clear URL Params
         </button>

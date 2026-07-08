@@ -587,15 +587,15 @@ export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose, isInl
 
           {/* HISTORICAL DETAILED LEDGER TABLE */}
           <div className="space-y-2 text-left">
-            <div className="flex justify-between items-center bg-[var(--bg-secondary)] p-1 rounded-lg">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[var(--bg-secondary)] p-1.5 rounded-lg gap-3">
               <h3 className="text-xs font-bold uppercase tracking-wide text-[var(--text-primary)] flex items-center gap-1">
                 <Database className="w-3.5 h-3.5 text-purple-500" /> Parsed Audit Ledger Log
               </h3>
               
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                 <button
                   onClick={handleGenerateSampleData}
-                  className="px-2.5 py-1.5 rounded-lg bg-indigo-50/10 hover:bg-indigo-50/20 text-xs text-[var(--accent-primary)] font-bold transition-all cursor-pointer flex items-center gap-1"
+                  className="px-2.5 py-1.5 rounded-lg bg-indigo-50/10 hover:bg-indigo-50/20 text-[10px] sm:text-xs text-[var(--accent-primary)] font-bold transition-all cursor-pointer flex items-center gap-1"
                 >
                   <RefreshCw className="w-3 h-3" />
                   <span>Generate Test Data</span>
@@ -604,7 +604,7 @@ export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose, isInl
                   <>
                     <button
                       onClick={handleExportToCSV}
-                      className="px-2.5 py-1.5 rounded-lg bg-emerald-605/15 hover:bg-emerald-600/25 text-xs text-emerald-555 font-bold transition-all cursor-pointer flex items-center gap-1 border border-emerald-500/20"
+                      className="px-2.5 py-1.5 rounded-lg bg-emerald-605/15 hover:bg-emerald-600/25 text-[10px] sm:text-xs text-emerald-555 font-bold transition-all cursor-pointer flex items-center gap-1 border border-emerald-500/20"
                       title="Download Ledger as CSV"
                     >
                       <Download className="w-3 h-3" />
@@ -612,7 +612,7 @@ export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose, isInl
                     </button>
                     <button
                       onClick={handleClearData}
-                      className="px-2.5 py-1.5 rounded-lg bg-rose-50/10 hover:bg-rose-50/20 text-xs text-rose-500 font-bold transition-all cursor-pointer flex items-center gap-1"
+                      className="px-2.5 py-1.5 rounded-lg bg-rose-50/10 hover:bg-rose-50/20 text-[10px] sm:text-xs text-rose-500 font-bold transition-all cursor-pointer flex items-center gap-1"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Reset Log</span>
@@ -628,8 +628,8 @@ export const TokenStatsModal: React.FC<TokenStatsModalProps> = ({ onClose, isInl
               </div>
             ) : (
               <div className="border border-[var(--border-color)] rounded-xl overflow-hidden shadow-sm">
-                <div className="max-h-56 overflow-y-auto scrollbar-thin">
-                  <table className="w-full text-[11px] font-sans text-left border-collapse">
+                <div className="max-h-56 overflow-auto scrollbar-thin">
+                  <table className="w-full text-[11px] font-sans text-left border-collapse min-w-[500px]">
                     <thead>
                       <tr className="bg-[var(--bg-secondary)] border-b border-[var(--border-color)] text-[var(--text-secondary)] font-bold uppercase text-[9px] tracking-wider sticky top-0">
                         <th className="p-2.5 font-bold">Index</th>

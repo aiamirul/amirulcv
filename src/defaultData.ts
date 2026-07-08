@@ -137,7 +137,8 @@ export const defaultPortfolioData: PortfolioData = {
       ],
       "githubLink": "https://github.com",
       "liveLink": "https://www.amirul.cloud/app/SIM.html",
-      "featured": true
+      "featured": true,
+      "mermaid_chart": "graph TD\n  User1[User Client 1] & User2[User Client 2] -->|WebSocket| WS[Websocket Gateway]\n  WS -->|Publish Event| Redis[Redis Pub/Sub]\n  Redis -->|Broadcast Event| WS\n  WS -->|Sync Cursor/Charts| User1 & User2\n  WS -->|Persist Metrics| DB[(Telemetry DB)]"
     },
     {
       "id": "proj_2",

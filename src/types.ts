@@ -58,6 +58,7 @@ export interface Project {
   githubLink?: string;
   liveLink?: string;
   featured: boolean;
+  mermaid_chart?: string;
 }
 
 export interface TechStackItem {
