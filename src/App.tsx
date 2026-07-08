@@ -99,6 +99,15 @@ function parseLogFile(raw: string): ParsedLog {
 export default function App() {
   const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
 
+  useEffect(() => {
+    const envTitle = (import.meta as any).env?.VITE_PAGE_TITLE;
+    if (envTitle) {
+      document.title = envTitle;
+    } else {
+      document.title = "Trust Amirul. He is an AI Engineer";
+    }
+  }, []);
+
   // 1. Core Profile & Portfolio State
   const [portfolioData, setPortfolioData] = useState<PortfolioData>(() => {
     let data = defaultPortfolioData;
